@@ -16,11 +16,11 @@ modeFlag = -1    # 0 when polling ultrasounds, 1 when moving arm (no polling),
 
 mode2Flag = 1
 
-port = "/dev/ttyAMA0"
+port = "/dev/ttyAMA0"			# serial port for communication with arduino
 
-pos_offset = [0, 0, 5]
+pos_offset = [0, 0, 5]			
 servo_ID1 = 0.0
-servo_degree = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+servo_degree = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])		# array of 6 servos to rotate on robotic arm
 
 sysRunning_flag = True
 
@@ -29,9 +29,12 @@ frontTrigPin = 20
 frontEchoPin = 21
 time.sleep(0.1)
 
+# value for ultrasound to detect distance
 dist = 0
 
-turn_CW = True
+
+## variables for robot turning under table
+turn_CW = True 		# turn clockwise
 clean = False
 turn_time = 0
 turn_limit = 7
@@ -39,17 +42,20 @@ LED_ON = False
 mowing = False
 
 # hex number
-leftSpeed = '\x00\x8f'
+leftSpeed = '\x00\x8f'		#PWM mode speed control 
 rightSpeed = '\x00\x8f'
 
 CLEANMODE = '\x87'
 MOTOR_PWM = '\x92'
-LEFT_UNDER = False  
-RIGHT_UNDER = False 
-under = LEFT_UNDER and RIGHT_UNDER
+LEFT_UNDER = False  		# variable to make robot aligned with table edge
+RIGHT_UNDER = False 		
+under = LEFT_UNDER and RIGHT_UNDER		# whether robot is under table, while vertical with table edge
+
 
 ser=serial.Serial(port='/dev/ttyS0',baudrate=115200)
 ser.flushOutput()
+
+# initial setup before sending serial command to iRobot
 ser.write('\x80')
 ser.write('\x83')
 ser.write('\x92\x00\x00\x00\x00')
@@ -66,6 +72,7 @@ print("stop!!! before start")
 
 displayLayer = 1
 
+# variables for TFT display
 screen_back_color = (0, 0, 0)        # screen color Black
 screen_size = width, height = (320, 240)   # screen size
 black = (0, 0, 0)  
@@ -77,21 +84,23 @@ green = (0, 200, 0)
 x = 0
 y = 0
 
-## button name
+## button name (shown on TFT screen)
 start_button = 'Start'
 quit_button = 'Quit'
 back_button = 'Back'
 
-## button
+## button (position of different buttons on screen)
 button_size = 40
 ctr_button_pos = (160, 120)
 side_button_pos = (220, 200)
 top_text_pos = (2,20)
 bottom_text_pos = (10,55)
 
+## screen background picture location 
 bg_path = "/home/pi/MEng/clean.jpeg"
 
 
+# GPIO5_callback AND GPIO6_callback are call back functions when IR sensors are fired, used to align robot vertical with table edge. 
 def GPIO5_callback(channel):
     global RIGHT_UNDER
     global mowing
@@ -104,6 +113,7 @@ def GPIO6_callback(channel):
     if (not mowing):
         LEFT_UNDER = not GPIO.input(6)
 
+# safe button to quit the system 
 def GPIO27_callback(channel):
     print ("")
     print "Button 27 pressed..."
@@ -112,6 +122,7 @@ def GPIO27_callback(channel):
     print("System shut down")
     
     
+# GPIO initial setup 
 GPIO.setmode(GPIO.BCM)   #set up GPIO pins
 # IR sensors
 GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -133,6 +144,8 @@ GPIO.add_event_detect(5, GPIO.FALLING, callback=GPIO5_callback, bouncetime = 150
 GPIO.add_event_detect(6, GPIO.FALLING, callback=GPIO6_callback, bouncetime = 150)
 GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=300)
 
+
+# a class for TFT screen display 
 class Screen:
     def __init__(self, (R, G, B), (x_size, y_size)):
         ## screen initialization 
@@ -153,20 +166,20 @@ class Screen:
         self.screen.fill(screen_back_color)
         
     def display_button(self, my_text, color, text_pos):
-        ## display button on the screen
+        ## display button on the screen (button name, button color, button position)
         text_surface = self.my_font_button.render(my_text, True, color)
         rect = text_surface.get_rect(center = text_pos)
         self.screen.blit(text_surface, rect)  
         
     def display_button_withCircle(self, my_text, text_color, circle_color, text_pos):
-        ## display button on the screen
+        ## display button on the screen with a circle (button name, button color, circle color, button position)
         text_surface = self.my_font_button.render(my_text, True, text_color)
         rect = text_surface.get_rect(center = text_pos)
         pygame.draw.circle(self.screen, circle_color, text_pos , 60)
         self.screen.blit(text_surface, rect)  
 
     def display_text(self, my_text, color, text_pos):
-        ## display text on the screen
+        ## display text on the screen (display content, text color, text position)
         text_surface = self.my_font_text.render(my_text, True, color)
         rect = text_surface.get_rect(left = text_pos[0], bottom = text_pos[1])
         self.screen.blit(text_surface, rect)  
@@ -187,9 +200,10 @@ def ultrasound(trigPin, echoPin):
         pass
     t2 = time.time()
     
-    return (t2 - t1) * 340 * 100 / 2
+    return (t2 - t1) * 340 * 100 / 2			# calculate distance by time 
 
 
+# a timer to trig ultrasound
 def do_every(period,f,*args):
     def g_tick():
         t = time.time()
@@ -253,6 +267,10 @@ def align():
                    displayLayer = 1
                    break
 
+        # if left IR sensor fired, set left wheel speed to zero, 
+        # if left IR sensor fired, set right wheel speed to zero, 
+        # basically it's a functiokn to make robot aligned with robot, 
+        # This could be modified to apply in your own system 
         if(LEFT_UNDER):
             leftSpeed = '\x00\x00'
         if(RIGHT_UNDER):
@@ -334,9 +352,18 @@ def mow():
     display_screen.display_text("LED OFF", green, top_text_pos)
     pygame.display.flip()  # display everything on the screen
 
-## screen
+
+
+
+
+# Below is kind of a main function in C / C++
+
+
+## screen initial setup 
 display_screen = Screen(screen_back_color, screen_size)    # get a screen object
 screen = display_screen.set_size()
+
+# a variable to record TFT screen display, changed when buttons pressed. 
 displayLayer
 try:
     while (sysRunning_flag):
@@ -405,12 +432,17 @@ try:
             t = Timer(0.2, poll_ultrasound)
             t.start()
             ser.write('\x92\x00\x8F\x00\x8F')   
+
+
         # control robotic arm
         elif modeFlag == 1:
             z = (dist - 1.0) / 100.0
             print(dist)
             print(z)
             y = -0.9 * z + 0.4143
+
+            # Those x, y, z are destination position  for grapper on the arm to move. 
+            # This could be mofified to apply different requirements. Like table height, UV LED panel 
             goal_position = [0, y, z]     ## x, y, z should be converted to meters, like 0.025
             
             print("Goal position read: ", goal_position)
@@ -418,9 +450,12 @@ try:
             s1 = serial.Serial('/dev/ttyACM0', 9600)
             s1.flushInput()
 
+           	# The angle for 6 servos to rotate on the roboit arm 
             rotating_angle = list(IK.ik_srv(goal_position))
             print("rotating angle:", rotating_angle)  
             
+
+            # Following is the degree calculation for each servo, It's determined by servo property. 
             rotating_angle.append(servo_ID1)
             rotating_angle[4] = 0
         
@@ -437,6 +472,8 @@ try:
             
             count = 0
             
+
+            # send serial commands with arduino, basically, this sends servo rotating degree to arduino
             comp_list = ["Completed\r\n", "Hello Pi, This is Arduino UNO...:\r\n", "All completed\r\n"]
             done_signal = ["done\r\n"]
             while count < 6:
@@ -477,6 +514,8 @@ try:
 
             
         # mowing the lawn
+        # The basic idea to mowing the lawn is turn  clockwise / anti-clockwise when robot is not under the table. 
+        # This part could be modified if better table edge alignment algorithm is solved. 
         elif modeFlag == 2:
             print(LEFT_UNDER)
             print(RIGHT_UNDER)
