@@ -17,7 +17,7 @@ modeFlag = -1    # 0 when polling ultrasounds, 1 when moving arm (no polling),
 mode2Flag = 1
 
 port = "/dev/ttyAMA0"			# serial port for communication with arduino
-
+#for robot arm
 pos_offset = [0, 0, 5]			
 servo_ID1 = 0.0
 servo_degree = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])		# array of 6 servos to rotate on robotic arm
@@ -42,23 +42,23 @@ LED_ON = False
 mowing = False
 
 # hex number
-leftSpeed = '\x00\x8f'		#PWM mode speed control 
+leftSpeed = '\x00\x8f'		#PWM mode speed control of Roomba wheels 
 rightSpeed = '\x00\x8f'
 
-CLEANMODE = '\x87'
-MOTOR_PWM = '\x92'
-LEFT_UNDER = False  		# variable to make robot aligned with table edge
-RIGHT_UNDER = False 		
+CLEANMODE = '\x87'          #default cleaning mode
+MOTOR_PWM = '\x92'          #controls raw forward and backward motion of Roomba's wheels independently +/-255 is range
+LEFT_UNDER = False  		#IR sensor variable to make robot aligned with table edge. 
+RIGHT_UNDER = False 		#False if IR sensor doesn't detect anything, True if detects
 under = LEFT_UNDER and RIGHT_UNDER		# whether robot is under table, while vertical with table edge
 
 
-ser=serial.Serial(port='/dev/ttyS0',baudrate=115200)
+ser=serial.Serial(port='/dev/ttyS0',baudrate=115200)    #port for Raspberry Pi. May need to change port to ttyUSB0
 ser.flushOutput()
 
 # initial setup before sending serial command to iRobot
-ser.write('\x80')
-ser.write('\x83')
-ser.write('\x92\x00\x00\x00\x00')
+ser.write('\x80')   #start command
+ser.write('\x83')   #safe mode, allows user control
+ser.write('\x92\x00\x00\x00\x00')   #sets Roomba wheel speed to 0
 time.sleep(0.7)
 print("stop!!! before start")
 
@@ -224,11 +224,11 @@ def poll_ultrasound():
     dist = ultrasound(frontTrigPin, frontEchoPin)
     print('Distance: %0.2f cm' %dist)
 
-    if(dist > 25 and dist < 50):
-        modeFlag = 1
-        ser.write('\x92\x00\x00\x00\x00')
-    elif(modeFlag == 0):
-        t = Timer(0.2, poll_ultrasound)
+    if(dist > 25 and dist < 50):#if object is within 25-50 cm of ultrasound sensor
+        modeFlag = 1 #move robotic arm mode- no ultrasound polling
+        ser.write('\x92\x00\x00\x00\x00') #set wheel speed to 0
+    elif(modeFlag == 0):#if in poll ultrasound mode i.e. nothing detected
+        t = Timer(0.2, poll_ultrasound) #after 0.2 seconds, poll ultrasound again
         t.start()
     else:
         pass
@@ -284,7 +284,7 @@ def align():
 
 
 
-# mow the lawn algorithmdisplayLayer
+# mow the lawn algorithmdisplayLayer. All this does is go forward and turn on LEDs
 def mow():
     global LED_ON
     global RIGHT_UNDER
@@ -333,13 +333,13 @@ def mow():
                    GPIO.output(19,0)
                    break
 
-        ser.write('\x92\x00\x6F\x00\x6F')
-        RIGHT_UNDER = not GPIO.input(5)
-        LEFT_UNDER = not GPIO.input(6)
+        ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
+        RIGHT_UNDER = not GPIO.input(5) #right IR
+        LEFT_UNDER = not GPIO.input(6)  #left IR
         #print('mowing right', RIGHT_UNDER)
         #print('mowing left', LEFT_UNDER)
-        GPIO.output(26,1)
-        GPIO.output(19,1)
+        GPIO.output(26,1) #LED
+        GPIO.output(19,1) #LED
 
     # lights off
     GPIO.output(26,0)
@@ -429,9 +429,9 @@ try:
 
         # poll ultrasounds
         if modeFlag == 0:
-            t = Timer(0.2, poll_ultrasound)
+            t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
             t.start()
-            ser.write('\x92\x00\x8F\x00\x8F')   
+            ser.write('\x92\x00\x8F\x00\x8F')   #move forward
 
 
         # control robotic arm
@@ -542,25 +542,25 @@ try:
                                 break
                 mode2Flag = 0
             else:
-                if(LEFT_UNDER or RIGHT_UNDER):
-                    ser.write('\x80')
-                    ser.write('\x83')
-                    ser.write('\x92\x00\x00\x00\x00')
+                if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensros are under the table
+                    ser.write('\x80') #start
+                    ser.write('\x83') #safe mode
+                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     time.sleep(0.1)
                     print("left", LEFT_UNDER)
                     print("right", RIGHT_UNDER)
 
                     print("in align")
                     align()
-                    ser.write('\x92\x00\x00\x00\x00')
+                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     print("wait 0.3 sec")
                     time.sleep(0.3)
                     print("mowing...")
-                    mow()
+                    mow() #mow just moves forward
 
                     if(turn_CW):
                         print('in turn')
-                        ser.write('\x92\x00\x00\x00\x6F')
+                        ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
                         #time.sleep(3.5)
                         # timer version with quit button check
                         start = time.time()
@@ -589,7 +589,7 @@ try:
                             
                     else:
                         print('in turn')
-                        ser.write('\x92\x00\x6F\x00\x00')
+                        ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
                         #time.sleep(3.5)
                         # timer version with quit button check
                         start = time.time()
@@ -616,7 +616,7 @@ try:
                             sysRunning_flag = False
                             break
                 else:
-                    ser.write('\x92\x00\x4F\x00\x4F')
+                    ser.write('\x92\x00\x4F\x00\x4F') #move forward
 
         else:
             pass
@@ -625,8 +625,12 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
+    #stop command when we are done working
+    ser.write('\xAD')
     ser.close()
     
 print("exit")
 ser.write('\x92\x00\x00\00\00')
+#stop command when we are done working
+ser.write('\xAD')
 GPIO.cleanup()
