@@ -57,7 +57,10 @@ ser.flushOutput()
 
 # initial setup before sending serial command to iRobot
 ser.write('\x80')   #start command
-ser.write('\x83')   #safe mode, allows user control
+#Safe mode: allows for user control. Rather, may want to go to Passive Mode after the print statement. 
+#Luckily, start command auto sends to passive mode.
+#In passive mode, the clean command may allow us to randomly wander (base 10 opcode of 135, hex \x87)
+ser.write('\x83')   #safe mode, allows user control. I
 ser.write('\x92\x00\x00\x00\x00')   #sets Roomba wheel speed to 0
 time.sleep(0.7)
 print("stop!!! before start")
@@ -225,6 +228,7 @@ def poll_ultrasound():
     print('Distance: %0.2f cm' %dist)
 
     if(dist > 25 and dist < 50):#if object is within 25-50 cm of ultrasound sensor
+        #if object detected, move to robotic arm mode. May want to go into findTableEdge mode
         modeFlag = 1 #move robotic arm mode- no ultrasound polling
         ser.write('\x92\x00\x00\x00\x00') #set wheel speed to 0
     elif(modeFlag == 0):#if in poll ultrasound mode i.e. nothing detected
@@ -268,8 +272,8 @@ def align():
                    break
 
         # if left IR sensor fired, set left wheel speed to zero, 
-        # if left IR sensor fired, set right wheel speed to zero, 
-        # basically it's a functiokn to make robot aligned with robot, 
+        # if right IR sensor fired, set right wheel speed to zero, 
+        # basically it's a function to make robot aligned with robot, 
         # This could be modified to apply in your own system 
         if(LEFT_UNDER):
             leftSpeed = '\x00\x00'
@@ -279,6 +283,7 @@ def align():
             #rightSpeed = '\x00\x8F'
             #leftSpeed = '\x00\x8F'
 
+        #update wheel speed
         ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
         under = LEFT_UNDER and RIGHT_UNDER
 
@@ -334,16 +339,16 @@ def mow():
                    break
 
         ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
-        RIGHT_UNDER = not GPIO.input(5) #right IR
-        LEFT_UNDER = not GPIO.input(6)  #left IR
+        RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
+        LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
         #print('mowing right', RIGHT_UNDER)
         #print('mowing left', LEFT_UNDER)
         GPIO.output(26,1) #LED
         GPIO.output(19,1) #LED
 
-    # lights off
-    GPIO.output(26,0)
-    GPIO.output(19,0)
+    # lights off once we are not under the table surface
+    GPIO.output(26,0) #LED off
+    GPIO.output(19,0) #LED off
     # update screen 
     bg = pygame.image.load(bg_path)
     screen.blit(bg, bg.get_rect())      
@@ -356,7 +361,7 @@ def mow():
 
 
 
-# Below is kind of a main function in C / C++
+# ----------Below is kind of a main function in C / C++ ----------
 
 
 ## screen initial setup 
@@ -369,7 +374,7 @@ try:
     while (sysRunning_flag):
         time.sleep(0.3)
         
-        
+        #GUI interface
         display_screen.clear_screen() # clear the screen with blackcolor 
         if(displayLayer == 1):
             for event in pygame.event.get():
@@ -427,11 +432,13 @@ try:
         pygame.display.flip()  # display everything on the screen
             
 
+        #Logic for traversal
         # poll ultrasounds
         if modeFlag == 0:
             t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
             t.start()
-            ser.write('\x92\x00\x8F\x00\x8F')   #move forward
+            #Why are we moving forward while polling for ultrasound when we should be wandering
+            ser.write('\x92\x00\x8F\x00\x8F')   #move forward. 
 
 
         # control robotic arm
