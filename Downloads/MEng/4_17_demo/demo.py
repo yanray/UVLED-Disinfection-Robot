@@ -11,7 +11,7 @@ import FK, VK, IK
 
 endConditionCounter = 0
 
-modeFlag = -1    # 0 when polling ultrasounds, 1 when moving arm (no polling),
+modeFlag = 0    # 0 when polling ultrasounds, 1 when moving arm (no polling),
                 # 2 for initiating mowing the lawn code
 
 mode2Flag = 1
@@ -45,6 +45,8 @@ mowing = False
 leftSpeed = '\x00\x8f'		#PWM mode speed control of Roomba wheels 
 rightSpeed = '\x00\x8f'
 
+STOP = '\xAD'               #stop command
+SAFEMODE = '\x83'           #safe mode, allows for user control
 CLEANMODE = '\x87'          #default cleaning mode
 MOTOR_PWM = '\x92'          #controls raw forward and backward motion of Roomba's wheels independently +/-255 is range
 LEFT_UNDER = False  		#IR sensor variable to make robot aligned with table edge. 
@@ -60,7 +62,7 @@ ser.write('\x80')   #start command
 #Safe mode: allows for user control. Rather, may want to go to Passive Mode after the print statement. 
 #Luckily, start command auto sends to passive mode.
 #In passive mode, the clean command may allow us to randomly wander (base 10 opcode of 135, hex \x87)
-ser.write('\x83')   #safe mode, allows user control. I
+ser.write('\x83')   #safe mode, allows user control.
 ser.write('\x92\x00\x00\x00\x00')   #sets Roomba wheel speed to 0
 time.sleep(0.7)
 print("stop!!! before start")
@@ -432,7 +434,7 @@ try:
         pygame.display.flip()  # display everything on the screen
             
 
-        #Logic for traversal
+        #----------Logic for traversal----------
         # poll ultrasounds
         if modeFlag == 0:
             t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
@@ -457,7 +459,7 @@ try:
             s1 = serial.Serial('/dev/ttyACM0', 9600)
             s1.flushInput()
 
-           	# The angle for 6 servos to rotate on the roboit arm 
+           	# The angle for 6 servos to rotate on the robot arm 
             rotating_angle = list(IK.ik_srv(goal_position))
             print("rotating angle:", rotating_angle)  
             
