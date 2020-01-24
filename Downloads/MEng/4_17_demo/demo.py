@@ -551,7 +551,7 @@ try:
                                 break
                 mode2Flag = 0
             else:
-                if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensros are under the table
+                if(LEFT_UNDER or RIGHT_UNDER): #if one or none of the IR sensros are under the table
                     ser.write('\x80') #start
                     ser.write('\x83') #safe mode
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
