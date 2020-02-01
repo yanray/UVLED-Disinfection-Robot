@@ -551,7 +551,7 @@ try:
                                 break
                 mode2Flag = 0
             else:
-                if(LEFT_UNDER or RIGHT_UNDER): #if one or none of the IR sensros are under the table
+                if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
                     ser.write('\x80') #start
                     ser.write('\x83') #safe mode
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
@@ -591,11 +591,12 @@ try:
                                         turn_CW = True
                                         break
                         turn_CW = False
+                        # max turn count
                         endConditionCounter += 1
                         if (endConditionCounter >= 4):
                             sysRunning_flag = False
                             break
-                            
+                    # turn CCW     
                     else:
                         print('in turn')
                         ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
@@ -621,6 +622,7 @@ try:
                                         break
                         turn_CW = True
                         endConditionCounter += 1
+                        #max turn count
                         if (endConditionCounter >= 4):
                             sysRunning_flag = False
                             break
