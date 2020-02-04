@@ -626,7 +626,7 @@ try:
                         if (endConditionCounter >= 4):
                             sysRunning_flag = False
                             break
-                else:
+                else:#instead of move forward, should be changed to random walk
                     ser.write('\x92\x00\x4F\x00\x4F') #move forward
 
         else:
