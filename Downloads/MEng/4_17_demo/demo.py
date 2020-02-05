@@ -642,12 +642,16 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
+    #safe mode then stop
+    ser.write(SAFEMODE)
     #stop command when we are done working
-    ser.write('\xAD')
+    ser.write(STOP)
     ser.close()
     
 print("exit")
 ser.write('\x92\x00\x00\00\00')
+#safe mode then stop
+ser.write(SAFEMODE)
 #stop command when we are done working
-ser.write('\xAD')
+ser.write(STOP)
 GPIO.cleanup()
