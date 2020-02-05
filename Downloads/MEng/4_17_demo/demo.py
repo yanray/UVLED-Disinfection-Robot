@@ -440,7 +440,11 @@ try:
             t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
             t.start()
             #Why are we moving forward while polling for ultrasound when we should be wandering
-            ser.write('\x92\x00\x8F\x00\x8F')   #move forward. 
+            #ser.write('\x92\x00\x8F\x00\x8F')   #move forward. 
+            
+            #put roomba in random walk mode
+            ser.write('\x80')   #start command
+            ser.write(CLEANMODE)#clean command: base 10 val is 135. This should be random walk mode
 
 
         # control robotic arm
