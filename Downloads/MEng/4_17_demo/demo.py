@@ -445,6 +445,7 @@ try:
 
         # control robotic arm
         elif modeFlag == 1:
+            """
             z = (dist - 1.0) / 100.0
             print(dist)
             print(z)
@@ -519,6 +520,7 @@ try:
                             displayLayer = 1  
                             modeFlag == 0
                             break
+            """
             modeFlag = 2
 
             
