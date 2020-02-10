@@ -644,14 +644,17 @@ except KeyboardInterrupt:
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
     #safe mode then stop
     ser.write(SAFEMODE)
+    time.sleep(0.2)
     #stop command when we are done working
     ser.write(STOP)
     ser.close()
     
 print("exit")
-ser.write('\x92\x00\x00\00\00')
 #safe mode then stop
 ser.write(SAFEMODE)
+time.sleep(0.2)
+ser.write('\x92\x00\x00\00\00')
+time.sleep(0.2)
 #stop command when we are done working
 ser.write(STOP)
 GPIO.cleanup()
