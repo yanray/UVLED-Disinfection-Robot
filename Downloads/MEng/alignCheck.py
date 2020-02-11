@@ -77,6 +77,8 @@ def align():
 
 
     while (not under):
+		print("left: " +str(LEFT_UNDER))
+		print("right: " +str(RIGHT_UNDER))
 		if(LEFT_UNDER):
 			leftSpeed = '\x00\x00'
 		if(RIGHT_UNDER):

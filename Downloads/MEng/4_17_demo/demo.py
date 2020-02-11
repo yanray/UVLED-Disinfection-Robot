@@ -54,7 +54,7 @@ RIGHT_UNDER = False 		#False if IR sensor doesn't detect anything, True if detec
 under = LEFT_UNDER and RIGHT_UNDER		# whether robot is under table, while vertical with table edge
 
 
-ser=serial.Serial(port='/dev/ttyS0',baudrate=115200)    #port for Raspberry Pi. May need to change port to ttyUSB0
+ser=serial.Serial(port='/dev/ttyUSB0',baudrate=115200)    #port for Raspberry Pi. May need to change port to ttyUSB0
 ser.flushOutput()
 
 # initial setup before sending serial command to iRobot
