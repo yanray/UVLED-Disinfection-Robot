@@ -23,6 +23,8 @@ servo_ID1 = 0.0
 servo_degree = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])		# array of 6 servos to rotate on robotic arm
 
 sysRunning_flag = True
+#True = Roomba is not wandering but should be
+wander = True 
 
 # pin for ultrasound // trigPin, echoPin
 frontTrigPin = 20
@@ -102,7 +104,7 @@ top_text_pos = (2,20)
 bottom_text_pos = (10,55)
 
 ## screen background picture location 
-bg_path = "/home/pi/MEng/clean.jpeg"
+bg_path = "/home/pi/Desktop/UVLED-Disinfection-Robot/Downloads/MEng/clean.jpeg"
 
 
 # GPIO5_callback AND GPIO6_callback are call back functions when IR sensors are fired, used to align robot vertical with table edge. 
@@ -232,12 +234,26 @@ def poll_ultrasound():
     if(dist > 25 and dist < 50):#if object is within 25-50 cm of ultrasound sensor
         #if object detected, move to robotic arm mode. May want to go into findTableEdge mode
         modeFlag = 1 #move robotic arm mode- no ultrasound polling
+        wander = False
+        ser.write(SAFEMODE)
+        time.sleep(0.2)
         ser.write('\x92\x00\x00\x00\x00') #set wheel speed to 0
     elif(modeFlag == 0):#if in poll ultrasound mode i.e. nothing detected
         t = Timer(0.2, poll_ultrasound) #after 0.2 seconds, poll ultrasound again
         t.start()
     else:
         pass
+
+#changes Roomba into clean mode aka wandering
+def toCleanMode():
+    global wander
+    time.sleep(0.2)
+    ser.write('\x80') #start
+
+    time.sleep(0.2)
+    ser.write(CLEANMODE) #clean mode
+    time.sleep(0.2)
+    wander = False
 
 # NEW CHANGES START HERE!!!!!!  besides initalizations
 # align detects edge during wandering and aligns roomba 
@@ -442,9 +458,9 @@ try:
             #Why are we moving forward while polling for ultrasound when we should be wandering
             #ser.write('\x92\x00\x8F\x00\x8F')   #move forward. 
             
-            #put roomba in random walk mode
-            ser.write('\x80')   #start command
-            ser.write(CLEANMODE)#clean command: base 10 val is 135. This should be random walk mode
+            #Roomba should be in wandering/clean mode when polling for ultrasounds
+            if(wander):
+                toCleanMode()
 
 
         # control robotic arm
@@ -600,8 +616,14 @@ try:
                         # max turn count
                         endConditionCounter += 1
                         if (endConditionCounter >= 4):
-                            sysRunning_flag = False
-                            break
+                            #sysRunning_flag = False
+                            #break
+                            
+                            #rather than breaking out of the loop...
+                            modeFlag = 0 #mode flag back to polling
+                            turn_CW = True #restored to original value
+                            wander = True #go back to wandering
+                            continue
                     # turn CCW     
                     else:
                         print('in turn')
@@ -630,10 +652,23 @@ try:
                         endConditionCounter += 1
                         #max turn count
                         if (endConditionCounter >= 4):
-                            sysRunning_flag = False
-                            break
+                            #sysRunning_flag = False
+                            #break
+                            
+                            #rather than breaking out of the loop...
+                            modeFlag = 0 #mode flag back to polling
+                            turn_CW = True #restored to original value
+                            wander = True #go back to wandering
+                            continue
                 else:#instead of move forward, should be changed to random walk
-                    ser.write('\x92\x00\x4F\x00\x4F') #move forward
+                    #ser.write('\x92\x00\x4F\x00\x4F') #move forward
+                    
+                    #if neither IR sensor is firing, then go back to random waklking
+                    #rather than breaking out of the loop...
+                    modeFlag = 0 #mode flag back to polling
+                    turn_CW = True #restored to original value
+                    wander = True #go back to wandering
+                    continue
 
         else:
             pass
