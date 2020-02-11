@@ -15,7 +15,8 @@ print("started")
 time.sleep(0.2)
 ser.write('\x87') #clean mode
 print("clean")
-#time.sleep(8)
+
+
 
 #---------polling--------
 trigPin = 20
@@ -69,15 +70,18 @@ try:
         print('Distance: %0.2f cm'%dist)
         #--------move to some lawn mowing state----------
         if dist < 30:
-        	fakeLawnMow()
-        	#---------return to polling in wander mode----------
-        	time.sleep(0.2)
-			ser.write('\x80') #start
-			print("started")
+            fakeLawnMow()
+            #---------return to polling in wander mode----------
+            time.sleep(0.2)
 
-			time.sleep(0.2)
-			ser.write('\x87') #clean mode
-			print("clean")
+            ser.write('\x80') #start
+            print("started")
+
+            time.sleep(0.2)
+            ser.write('\x87') #clean mode
+            print("clean")
+            time.sleep(4)
+            break
 
         
 
@@ -89,9 +93,11 @@ except KeyboardInterrupt:
     #stop command when we are done working
     ser.write('\xAD')
     ser.close()
+
     
 print("exit")
 #safe mode then stop
+time.sleep(0.2)
 ser.write('\x83')#safe mode
 time.sleep(0.2)
 ser.write('\x92\x00\x00\00\00') #wheel speed of 0
@@ -99,3 +105,4 @@ time.sleep(0.2)
 #stop command when we are done working
 ser.write('\xAD') #stop
 GPIO.cleanup()
+
