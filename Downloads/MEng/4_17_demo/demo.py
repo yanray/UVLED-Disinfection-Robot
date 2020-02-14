@@ -24,7 +24,7 @@ servo_degree = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])		# array of 6 servos to 
 
 sysRunning_flag = True
 #True = Roomba is not wandering but should be
-wander = True 
+wander = False
 
 # pin for ultrasound // trigPin, echoPin
 frontTrigPin = 20
@@ -408,6 +408,7 @@ try:
                             print("start button is pressed")
                             modeFlag = 0
                             displayLayer = 2
+                            wander = True
                             
                     # if touch the quit button, the program will quit
                     if(y > side_button_pos[1] - button_size / 2 and y < side_button_pos[1] + button_size / 2
