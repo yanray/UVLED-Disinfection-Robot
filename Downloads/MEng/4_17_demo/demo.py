@@ -61,10 +61,12 @@ ser.flushOutput()
 
 # initial setup before sending serial command to iRobot
 ser.write('\x80')   #start command
+time.sleep(0.2)
 #Safe mode: allows for user control. Rather, may want to go to Passive Mode after the print statement. 
 #Luckily, start command auto sends to passive mode.
 #In passive mode, the clean command may allow us to randomly wander (base 10 opcode of 135, hex \x87)
 ser.write('\x83')   #safe mode, allows user control.
+time.sleep(0.2)
 ser.write('\x92\x00\x00\x00\x00')   #sets Roomba wheel speed to 0
 time.sleep(0.7)
 print("stop!!! before start")
@@ -229,9 +231,11 @@ def poll_ultrasound():
     
     #print('calculating distance....')displayLayer
     dist = ultrasound(frontTrigPin, frontEchoPin)
+    print("Polling ultrasound")
     print('Distance: %0.2f cm' %dist)
 
     if(dist > 25 and dist < 50):#if object is within 25-50 cm of ultrasound sensor
+        print("Object detected by ultrasound")
         #if object detected, move to robotic arm mode. May want to go into findTableEdge mode
         modeFlag = 1 #move robotic arm mode- no ultrasound polling
         wander = False
@@ -247,6 +251,7 @@ def poll_ultrasound():
 #changes Roomba into clean mode aka wandering
 def toCleanMode():
     global wander
+    print("Going toCleanMode")
     time.sleep(0.2)
     ser.write('\x80') #start
 
@@ -294,8 +299,10 @@ def align():
         # basically it's a function to make robot aligned with robot, 
         # This could be modified to apply in your own system 
         if(LEFT_UNDER):
+            print("Left IR under, stop left wheels")
             leftSpeed = '\x00\x00'
         if(RIGHT_UNDER):
+            print("Right IR under, stop right wheels")
             rightSpeed = '\x00\x00'
         #else:
             #rightSpeed = '\x00\x8F'
@@ -355,7 +362,7 @@ def mow():
                    GPIO.output(26,0)
                    GPIO.output(19,0)
                    break
-
+        print("In mow. Just moving forward")
         ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
         RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
         LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
@@ -454,6 +461,7 @@ try:
         #----------Logic for traversal----------
         # poll ultrasounds
         if modeFlag == 0:
+            print("In modeflag 0")
             t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
             t.start()
             #Why are we moving forward while polling for ultrasound when we should be wandering
@@ -466,6 +474,7 @@ try:
 
         # control robotic arm
         elif modeFlag == 1:
+            print("in mode flag 1")
             """
             z = (dist - 1.0) / 100.0
             print(dist)
@@ -549,8 +558,7 @@ try:
         # The basic idea to mowing the lawn is turn  clockwise / anti-clockwise when robot is not under the table. 
         # This part could be modified if better table edge alignment algorithm is solved. 
         elif modeFlag == 2:
-            print(LEFT_UNDER)
-            print(RIGHT_UNDER)
+            print("in mode flag 2")
             if(mode2Flag == 1):
                 #time.sleep(2)
                 # timer version with quit button check
@@ -574,13 +582,18 @@ try:
                                 break
                 mode2Flag = 0
             else:
+                print("Left Under before if statement: "+str(LEFT_UNDER))
+                print("Right Under before if statement: "+str(RIGHT_UNDER))
                 if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
+                    print("Left, Right, or Both IR sensors are True")
                     ser.write('\x80') #start
+                    time.sleep(0.2)
                     ser.write('\x83') #safe mode
+                    time.sleep(0.2)
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     time.sleep(0.1)
-                    print("left", LEFT_UNDER)
-                    print("right", RIGHT_UNDER)
+                    print("left in if statement: ", LEFT_UNDER)
+                    print("right in if statement: ", RIGHT_UNDER)
 
                     print("in align")
                     align()
@@ -590,8 +603,10 @@ try:
                     print("mowing...")
                     mow() #mow just moves forward
 
+                    print("Am I turning clockwise? " + str(turn_CW))
                     if(turn_CW):
-                        print('in turn')
+                        print('in CW turn')
+                        print("moving left wheels but not right")
                         ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
                         #time.sleep(3.5)
                         # timer version with quit button check
@@ -616,10 +631,11 @@ try:
                         turn_CW = False
                         # max turn count
                         endConditionCounter += 1
+                        print("end condition counter value: " + str(endConditionCounter))
                         if (endConditionCounter >= 4):
                             #sysRunning_flag = False
                             #break
-                            
+                            print("In end condition. Return to wandering and polling")
                             #rather than breaking out of the loop...
                             modeFlag = 0 #mode flag back to polling
                             turn_CW = True #restored to original value
@@ -627,7 +643,8 @@ try:
                             continue
                     # turn CCW     
                     else:
-                        print('in turn')
+                        print('in CCW turn')
+                        print("moving right wheels but not left wheels")
                         ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
                         #time.sleep(3.5)
                         # timer version with quit button check
@@ -651,11 +668,12 @@ try:
                                         break
                         turn_CW = True
                         endConditionCounter += 1
+                        print("end condition counter value: " + str(endConditionCounter))
                         #max turn count
                         if (endConditionCounter >= 4):
                             #sysRunning_flag = False
                             #break
-                            
+                            print("In end condition. Return to wandering and polling")
                             #rather than breaking out of the loop...
                             modeFlag = 0 #mode flag back to polling
                             turn_CW = True #restored to original value
@@ -663,8 +681,8 @@ try:
                             continue
                 else:#instead of move forward, should be changed to random walk
                     #ser.write('\x92\x00\x4F\x00\x4F') #move forward
-                    
-                    #if neither IR sensor is firing, then go back to random waklking
+                    print("if neither IR sensor is firing, then go back to random walking")
+                    #if neither IR sensor is firing, then go back to random walking
                     #rather than breaking out of the loop...
                     modeFlag = 0 #mode flag back to polling
                     turn_CW = True #restored to original value
