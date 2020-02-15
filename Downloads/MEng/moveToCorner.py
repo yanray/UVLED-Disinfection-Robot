@@ -9,6 +9,7 @@ from threading import Timer
 
 sysRunning_flag = True
 
+modeFlag = 0
 
 #start off random walk
 #ultrasound detects
@@ -184,6 +185,7 @@ def do_every(period,f,*args):
 
 def poll_ultrasound():
     global dist
+    global modeFlag
     
     #print('calculating distance....')displayLayer
     dist = ultrasound(frontTrigPin, frontEchoPin)
@@ -193,49 +195,12 @@ def poll_ultrasound():
     # if the Roomba is under the table, 
     # we try to make it turn left until it arrives the left corner
     if(dist > 25 and dist < 50):
-        if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
-            print("left " + str(LEFT_UNDER))
-            print("right "+ str(RIGHT_UNDER))
-            ser.write('\x80') #start
-            time.sleep(0.2)
-            ser.write('\x83') #safe mode
-            time.sleep(0.2)
-            ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-            time.sleep(0.1)
-
-            print("in align")
-            align()
-            ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-            print("wait 0.3 sec")
-            time.sleep(0.3)
-
-            #finished align, now rotate left
-            while(LEFT_UNDER):
-                ser.write('\x92\x00\x00\x00\x01')#Turn in place counter-clockwise = 1 = 0x0001 
-                LEFT_UNDER = not GPIO.input(6) 
-                print("updated value of LEFT_UNDER: "+str(LEFT_UNDER))
-
-
-            #move forward until we don't detect a table
-            
-
-            #finished moving forward, now rotate right
-
-            #now mow
-            print("mowing...")
-            mow() #mow just moves forward
-
-
-
-            # if LEFT_UNDER:
-            #     ClockWise = False
-
-            # if(C_ClockWise):
-            #     print('in turn')
-            #     ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
-
-            # else: 
-            #     ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
+        print('object detected')
+        ser.write('\x83')
+        time.sleep(0.2)
+        ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+        time.sleep(0.1)
+        modeFlag = 2
 
         # After we can move under the table vertically, we need to turn CCk 90 degress 
         # untill the untrasound sensor moves out of the table
@@ -243,6 +208,60 @@ def poll_ultrasound():
         t = Timer(0.2, poll_ultrasound) #after 0.2 seconds, poll ultrasound again
         t.start()
 
+
+#driver code
+try:    
+    while(sysRunning_flag):
+        if modeFlag == 0:
+            print("In modeflag 0")
+            t = Timer(0.2, poll_ultrasound) #poll ultrasound every 0.2 seconds
+            t.start()
+        else:
+            if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
+                print("left " + str(LEFT_UNDER))
+                print("right "+ str(RIGHT_UNDER))
+                ser.write('\x80') #start
+                time.sleep(0.2)
+                ser.write('\x83') #safe mode
+                time.sleep(0.2)
+                ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+                time.sleep(0.1)
+
+                print("in align")
+                align()
+                ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+                print("wait 0.3 sec")
+                time.sleep(0.3)
+
+                #finished align, now rotate left
+                while(LEFT_UNDER):
+                    ser.write('\x92\x00\x00\x00\x01')#Turn in place counter-clockwise = 1 = 0x0001 
+                    LEFT_UNDER = not GPIO.input(6) 
+                    print("updated value of LEFT_UNDER: "+str(LEFT_UNDER))
+
+
+                #move forward until we don't detect a table
+                #code to move forward
+                ser.write('\x92\x80\x00\x00\x00')
+
+                #finished moving forward, now rotate right
+                ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
+
+                #now mow
+                print("mowing...")
+                mow() #mow just moves forward
+
+
+
+                # if LEFT_UNDER:
+                #     ClockWise = False
+
+                # if(C_ClockWise):
+                #     print('in turn')
+                #     ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
+
+                # else: 
+                #     ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
 
 
       
