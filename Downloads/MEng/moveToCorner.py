@@ -33,12 +33,13 @@ time.sleep(0.2)
 ser.write('\x87') #clean mode
 print("clean")
 
-# global RIGHT_UNDER
-# RIGHT_UNDER = False
-# global LEFT_UNDER
-# LEFT_UNDER = False
-# global ClockWise
-# global C_ClockWise
+
+C_ClockWise = True #T means need to turn left after align for corner find
+ClockWise = False #T means I have turned left for corner find and need to turn right for lawn mow
+
+global ClockWise
+global C_ClockWise
+
 ## variables for robot turning under table
 turn_CW = True      # turn clockwise
 clean = False
@@ -234,18 +235,39 @@ try:
                 time.sleep(0.3)
 
                 #finished align, now rotate left
-                while(LEFT_UNDER):
-                    ser.write('\x92\x00\x00\x00\x01')#Turn in place counter-clockwise = 1 = 0x0001 
-                    LEFT_UNDER = not GPIO.input(6) 
-                    print("updated value of LEFT_UNDER: "+str(LEFT_UNDER))
-
+                ser.write('\x92\x00\x00\x00\x01')#Turn in place counter-clockwise = 1 = 0x0001 
+                #countdown on when to stop. Stop when ultrasound doesn't detect table
+                while(C_ClockWise):
+                    dist = ultrasound(frontTrigPin, frontEchoPin)
+                    print("dist is: "+str(dist))
+                    if(dist > 50):
+                        C_ClockWise = False
+                #may need to turn C_ClockWise back to True later
 
                 #move forward until we don't detect a table
+                ser.write('\x92\x00\x00\x00\x00')
+                time.sleep(0.2)
                 #code to move forward
                 ser.write('\x92\x80\x00\x00\x00')
+                
+
+                #countdown to move forward
+                while(RIGHT_UNDER):
+                    RIGHT_UNDER = not GPIO.input(5)
 
                 #finished moving forward, now rotate right
+                ser.write('\x92\x00\x00\x00\x00')
+                time.sleep(0.2)
+                ClockWise = True
                 ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
+
+                #countdown on when to stop turning clockwise
+                while(ClockWise):
+                    dist = ultrasound(frontTrigPin, frontEchoPin)
+                    print("dist is: "+str(dist))
+                    if(dist > 50):
+                        ClockWise = False
+                #may need to change ClockWise back to True
 
                 #now mow
                 print("mowing...")
