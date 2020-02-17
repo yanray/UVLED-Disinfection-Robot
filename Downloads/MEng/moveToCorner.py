@@ -34,11 +34,11 @@ ser.write('\x87') #clean mode
 print("clean")
 
 
+global ClockWise
+global C_ClockWise
 C_ClockWise = True #T means need to turn left after align for corner find
 ClockWise = False #T means I have turned left for corner find and need to turn right for lawn mow
 
-global ClockWise
-global C_ClockWise
 
 ## variables for robot turning under table
 turn_CW = True      # turn clockwise
@@ -81,7 +81,7 @@ def GPIO6_callback(channel):
 # safe button to quit the system 
 def GPIO27_callback(channel):
     print ("")
-    print "Button 27 pressed..."
+    print ("Button 27 pressed...")
     global sysRunning_flag
     sysRunning_flag = False
     print("System shut down")
@@ -287,10 +287,18 @@ try:
 
 
       
-
+except KeyboardInterrupt:
+    GPIO.cleanup() # clean up GPIO on CTRL+C exit
+    #safe mode then stop
+    ser.write(SAFEMODE)
+    time.sleep(0.2)
+    #stop command when we are done working
+    ser.write(STOP)
+    ser.close()
     
-print("exit")
+
 #safe mode then stop
+print("exit")
 time.sleep(0.2)
 ser.write('\x83')#safe mode
 time.sleep(0.2)
@@ -300,4 +308,3 @@ time.sleep(0.2)
 ser.write('\xAD') #stop
 GPIO.cleanup()
 ser.close()
-
