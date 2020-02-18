@@ -39,15 +39,24 @@ GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=300
 
 #test boolean values for IR sensors
 try:
+    counter = 0
     while(True):
-        LEFT_UNDER = not GPIO.input(6)
-        print("left under: " + str(LEFT_UNDER))
+        RIGHT_UNDER = not GPIO.input(5)
+        if RIGHT_UNDER and counter ==0:
+            print("right under: " + str(RIGHT_UNDER))
+            RIGHT_UNDER = not GPIO.input(5)
+            print("counter 0")
+            counter +=1
+        elif RIGHT_UNDER and counter ==1:
+            print("right under: " + str(RIGHT_UNDER))
+            RIGHT_UNDER = not GPIO.input(5)
+            print("counter 0")
+            counter +=1
      
 
 except KeyboardInterrupt:
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
-    ser.close()
+    #ser.close()
     
 print("exit")
 GPIO.cleanup()
-
