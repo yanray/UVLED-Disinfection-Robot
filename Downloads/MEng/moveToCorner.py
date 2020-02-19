@@ -236,8 +236,19 @@ try:
                 print("in align")
                 align()
                 ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-                print("wait 0.3 sec")
-                time.sleep(0.3)
+                print("wait 0.2 sec")
+                time.sleep(0.2)
+
+                #moveBackwards
+                print("moving backwards")
+                ser.write('\x92\xFF\x91\xFF\x91')
+                while(RIGHT_UNDER or LEFT_UNDER):
+                    RIGHT_UNDER = not GPIO.input(5)
+                    LEFT_UNDER = not GPIO.input(6)
+                    time.sleep(0.02)
+
+                
+
 
                 #finished align, now rotate left
                 ser.write('\x92\x00\x6F\xFF\x91')#Turn in place counter-clockwise = 1 = 0x0001 
@@ -252,18 +263,32 @@ try:
                         C_ClockWise = False
                 #may need to turn C_ClockWise back to True later
 
+                
+                
+
                 #move forward until we don't detect a table
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
                 print("moving forward")
                 #code to move forward
-                ser.write('\x92\x00\x03\x00\x03')
+                ser.write('\x92\x00\x6F\x00\x6F')
                 
 
                 #countdown to move forward
                 while(RIGHT_UNDER):
-                    print(RIGHT_UNDER)
+                    #print(RIGHT_UNDER)
                     RIGHT_UNDER = not GPIO.input(5)
+                    time.sleep(0.3)
+                ser.write('\x92\x00\x00\x00\x00')
+                time.sleep(0.2)
+
+                #moveBackwards
+                print("moving backwards")
+                ser.write('\x92\xFF\x91\xFF\x91')
+                while(RIGHT_UNDER==False):
+                    RIGHT_UNDER = not GPIO.input(5)
+                    time.sleep(0.2)
+                
 
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
@@ -275,13 +300,24 @@ try:
                 ClockWise = True
                 #ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
                 print("clockwise")
+
+
                 #countdown on when to stop turning clockwise
                 while(ClockWise):
                     dist = ultrasound(frontTrigPin, frontEchoPin)
                     #print("dist is: "+str(dist))
-                    if(dist < 50):
+                    if(dist < 25):
                         ClockWise = False
                 #may need to change ClockWise back to True
+
+                print("break")
+                ser.write('\x92\x00\x00\x00\x00')
+                time.sleep(0.2)
+                ser.write('\xAD') #stop
+                GPIO.cleanup()
+                ser.close()
+                break
+
 
                 #now mow
                 print("mowing...")
