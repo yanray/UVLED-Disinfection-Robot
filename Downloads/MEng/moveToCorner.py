@@ -277,8 +277,17 @@ try:
                 #countdown to move forward
                 while(RIGHT_UNDER):
                     #print(RIGHT_UNDER)
-                    RIGHT_UNDER = not GPIO.input(5)
-                    time.sleep(0.3)
+                    count = 0
+                    #majority voting with three votes
+                    for i in range(3):
+                        temp = not GPIO.input(5)
+                        time.sleep(0.1)
+                        if temp == True:
+                            count = count + 1
+                    if count >= 2:
+                        RIGHT_UNDER = True
+                    else:
+                        RIGHT_UNDER = False
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
 
