@@ -318,7 +318,8 @@ try:
                     if(dist < 25):
                         ClockWise = False
                 #may need to change ClockWise back to True
-
+                
+                #force to stop before mowing
                 print("break")
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
