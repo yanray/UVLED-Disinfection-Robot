@@ -366,6 +366,40 @@ def mow():
         ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
         RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
         LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
+        
+        """
+        #Just an idea on how to stop mowing without needing a turn limit
+        #first sleep for a bit so that the roomba is under the table if there is one
+        time.sleep(0.1)
+        #next check to see if both right and left IR are false but with majority voting
+        #majority voting with three votes
+        count = 0
+        for i in range(3):
+            tempRight = not GPIO.input(5)
+            tempLeft = not GPIO.input(6)
+            time.sleep(0.1)
+            #if right and left are both false ie not under table
+            if tempRight == False and tempLeft==False:
+                count = count + 1
+        #if majority of votes say that we are not under table, then resume wandering
+        if count >=2:
+            # lights off once we are not under the table surface
+            GPIO.output(26,0) #LED off
+            GPIO.output(19,0) #LED off
+            # update screen 
+            bg = pygame.image.load(bg_path)
+            screen.blit(bg, bg.get_rect())      
+            display_screen.display_button_withCircle(quit_button, white, red, ctr_button_pos)
+            display_screen.display_text("ROOMBA IN PROGRESS", white, bottom_text_pos)
+            display_screen.display_text("LED OFF", green, top_text_pos)
+            pygame.display.flip()  # display everything on the screen
+            
+            #stop moving
+            ser.write('\x92\x00\x00\x00\x00')
+            modeFlag = 0
+            wander = True #this should take care of going back to wandering mode
+            
+        """
         #print('mowing right', RIGHT_UNDER)
         #print('mowing left', LEFT_UNDER)
         GPIO.output(26,1) #LED
@@ -601,7 +635,7 @@ try:
                     print("wait 0.3 sec")
                     time.sleep(0.3)
                     print("mowing...")
-                    mow() #mow just moves forward
+                    mow() #mow just moves forward. Edit: will change mow so that it checks whether to go back to random walk
 
                     print("Am I turning clockwise? " + str(turn_CW))
                     if(turn_CW):
@@ -679,7 +713,7 @@ try:
                             turn_CW = True #restored to original value
                             wander = True #go back to wandering
                             continue
-                else:#instead of move forward, should be changed to random walk
+                else:#instead of move forward, should be changed to random walk. Edit: this may need to be changed back to move forward
                     #ser.write('\x92\x00\x4F\x00\x4F') #move forward
                     print("if neither IR sensor is firing, then go back to random walking")
                     #if neither IR sensor is firing, then go back to random walking
