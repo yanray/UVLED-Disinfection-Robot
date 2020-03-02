@@ -3,9 +3,6 @@ import time
 import RPi.GPIO as GPIO
 
 from threading import Timer
-# import numpy as np
-# import math
-# from math import pi
 
 sysRunning_flag = True
 ser = serial.Serial(port = '/dev/ttyUSB0',baudrate=115200)
@@ -24,6 +21,14 @@ modeFlag = 0
 # pin for ultrasound // trigPin, echoPin
 frontTrigPin = 20
 frontEchoPin = 21
+
+leftTrigPin = 5
+leftEchoPin = 6
+
+rightTrigPin = 19
+rightEchoPin = 26
+
+threshold = 25
 # value for ultrasound to detect distance
 dist = 0
 
@@ -64,19 +69,19 @@ under = LEFT_UNDER and RIGHT_UNDER      # whether robot is under table, while ve
 
 
 # GPIO5_callback AND GPIO6_callback are call back functions when IR sensors are fired, used to align robot vertical with table edge. 
-def GPIO5_callback(channel):
-    global RIGHT_UNDER
-    global mowing
-    ClockWise = False # if the left IR is under the table, stop truing ClockWise
-    if (not mowing):
-        RIGHT_UNDER = not GPIO.input(5)
+# def GPIO5_callback(channel):
+#     global RIGHT_UNDER
+#     global mowing
+#     ClockWise = False # if the left IR is under the table, stop truing ClockWise
+#     if (not mowing):
+#         RIGHT_UNDER = not GPIO.input(5)
 
-def GPIO6_callback(channel):
-    global LEFT_UNDER
-    global mowing
-    C_ClockWise = False # if the left IR is under the table, stop truing CounterClockWise
-    if (not mowing):
-        LEFT_UNDER = not GPIO.input(6)
+# def GPIO6_callback(channel):
+#     global LEFT_UNDER
+#     global mowing
+#     C_ClockWise = False # if the left IR is under the table, stop truing CounterClockWise
+#     if (not mowing):
+#         LEFT_UNDER = not GPIO.input(6)
 
 # safe button to quit the system 
 def GPIO27_callback(channel):
@@ -88,9 +93,11 @@ def GPIO27_callback(channel):
 
 # GPIO initial setup 
 GPIO.setmode(GPIO.BCM)   #set up GPIO pins
+
 # IR sensors
-GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(6, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#GPIO.setup(6, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
 # quit button
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -98,11 +105,30 @@ GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(frontTrigPin, GPIO.OUT, initial = GPIO.LOW)
 GPIO.setup(frontEchoPin, GPIO.IN)
 
+GPIO.setup(leftTrigPin, GPIO.OUT, initial = GPIO.LOW)
+GPIO.setup(leftEchoPin, GPIO.IN)
+
+GPIO.setup(rightTrigPin, GPIO.OUT, initial = GPIO.LOW)
+GPIO.setup(rightEchoPin, GPIO.IN)
+
 ## add callback event
-GPIO.add_event_detect(5, GPIO.FALLING, callback=GPIO5_callback, bouncetime = 150)
-GPIO.add_event_detect(6, GPIO.FALLING, callback=GPIO6_callback, bouncetime = 150)
+#GPIO.add_event_detect(5, GPIO.FALLING, callback=GPIO5_callback, bouncetime = 150)
+#GPIO.add_event_detect(6, GPIO.FALLING, callback=GPIO6_callback, bouncetime = 150)
 GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=300)
 
+#checks if an ultrasound sensor is under a surface, specified by threshold height. 
+def checkIfUnder(trigPin,echoPin, threshold):
+    #use simple majority voting
+    count = 0
+    for i in range(3):
+        dist = ultrasound(trigPin,echoPin)
+        if dist < threshold:
+            count = count + 1
+    
+    if(count >=2):
+        return True
+    else:
+        return False
 
 # align detects edge during wandering and aligns roomba 
 def align():
@@ -121,6 +147,9 @@ def align():
         # if right IR sensor fired, set right wheel speed to zero, 
         # basically it's a function to make robot aligned with robot, 
         # This could be modified to apply in your own system 
+        LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+        time.sleep(0.01)
+        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
         if(LEFT_UNDER):
             #print("Left IR under, stop left wheels")
             leftSpeed = '\x00\x00'
@@ -148,9 +177,11 @@ def mow():
     while(RIGHT_UNDER or LEFT_UNDER):
         #print("In mow. Just moving forward")
         ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
-        RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
-        LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
-        
+        #RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
+        #LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
+        LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+        time.sleep(0.01)
+        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
 
 # ultrasound: to get the distance measured by ultrasound
 def ultrasound(trigPin, echoPin):
@@ -166,7 +197,7 @@ def ultrasound(trigPin, echoPin):
         pass
     t2 = time.time()
     
-    return (t2 - t1) * 340 * 100 / 2            # calculate distance by time 
+    return (t2 - t1) * 340 * 100 / 2			# calculate distance by time 
 
 
 # a timer to trig ultrasound
@@ -214,8 +245,8 @@ try:
     while(sysRunning_flag):
         if modeFlag == 0:
             #print("In modeflag 0")
-            dist = ultrasound(20,21)
-            if(dist < 25):
+            frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
+            if(frontUnder):
                 print("object detected")
                 modeFlag = 2
                 ser.write('\x83')
@@ -223,6 +254,9 @@ try:
                 #code to move forward
                 ser.write('\x92\x00\x6F\x00\x6F')
         else:
+            LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+            time.sleep(0.01)
+            RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
                 print("left " + str(LEFT_UNDER))
                 print("right "+ str(RIGHT_UNDER))
@@ -240,12 +274,13 @@ try:
                 time.sleep(0.2)
 
                 #moveBackwards
-                print("moving backwards")
-                ser.write('\x92\xFF\x91\xFF\x91')
-                while(RIGHT_UNDER or LEFT_UNDER):
-                    RIGHT_UNDER = not GPIO.input(5)
-                    LEFT_UNDER = not GPIO.input(6)
-                    time.sleep(0.02)
+                # print("moving backwards")
+                # ser.write('\x92\xFF\x91\xFF\x91')
+                # while(RIGHT_UNDER or LEFT_UNDER):
+                #     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,15)
+                #     time.sleep(0.01)
+                #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,15)
+                #     time.sleep(0.01)
 
                 
 
@@ -277,26 +312,19 @@ try:
                 #countdown to move forward
                 while(RIGHT_UNDER):
                     #print(RIGHT_UNDER)
-                    count = 0
-                    #majority voting with three votes
-                    for i in range(3):
-                        temp = not GPIO.input(5)
-                        time.sleep(0.1)
-                        if temp == True:
-                            count = count + 1
-                    if count >= 2:
-                        RIGHT_UNDER = True
-                    else:
-                        RIGHT_UNDER = False
+                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    time.sleep(0.1)
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
 
+                
+
                 #moveBackwards
-                print("moving backwards")
-                ser.write('\x92\xFF\x91\xFF\x91')
-                while(RIGHT_UNDER==False):
-                    RIGHT_UNDER = not GPIO.input(5)
-                    time.sleep(0.2)
+                # print("moving backwards")
+                # ser.write('\x92\xFF\x91\xFF\x91')
+                # while(RIGHT_UNDER==False):
+                #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                #     time.sleep(0.1)
                 
 
                 ser.write('\x92\x00\x00\x00\x00')
@@ -318,8 +346,7 @@ try:
                     if(dist < 25):
                         ClockWise = False
                 #may need to change ClockWise back to True
-                
-                #force to stop before mowing
+
                 print("break")
                 ser.write('\x92\x00\x00\x00\x00')
                 time.sleep(0.2)
@@ -368,3 +395,6 @@ except KeyboardInterrupt:
     #stop command when we are done working
     ser.write(STOP)
     ser.close()
+    
+
+
