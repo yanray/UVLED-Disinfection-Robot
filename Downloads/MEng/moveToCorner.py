@@ -254,6 +254,15 @@ try:
                 #code to move forward
                 ser.write('\x92\x00\x6F\x00\x6F')
         else:
+            #may need an if statement for handling mowing vs finding table corner since while loop repeats
+            #which means that after each loop the table finding would repeat
+
+            #can have a flag for find corner
+            #True initially
+            #after corner found, set to false
+            #mow. Once you are done mowing, return to random walk and set flag to true
+
+
             LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -358,19 +367,103 @@ try:
 
                 #now mow
                 print("mowing...")
-                mow() #mow just moves forward
-                #safe mode then stop
-                print("exit")
-                time.sleep(0.2)
-                ser.write('\x83')#safe mode
-                time.sleep(0.2)
-                ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                time.sleep(0.2)
-                #stop command when we are done working
-                ser.write('\xAD') #stop
-                GPIO.cleanup()
-                ser.close()
-                break 
+                mow() #mow just moves forward until no sensors are under the table
+
+
+                #now to handle turning
+                print("Am I turning clockwise? " + str(turn_CW))
+                if(turn_CW):
+                    print('in CW turn')
+                    print("moving left wheels but not right")
+                    ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
+                    #time.sleep(3.5)
+                    # timer version with quit button check
+                    start = time.time()
+                    while(time.time() - start < 3.5):
+                        print("")
+                    turn_CW = False
+                    
+                    #move forward a little bit
+                    ser.write('\x92\x00\x6F\x00\x6F')
+                    time.sleep(0.2)
+                    #then check ultrasound
+                    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+
+                    if (LEFT_UNDER== False and RIGHT_UNDER==False):
+                        #sysRunning_flag = False
+                        #break
+                        print("In end condition. Return to wandering and polling")
+                        ser.write('\x92\x00\x00\x00\x00')
+
+                        # #rather than breaking out of the loop...
+                        # modeFlag = 0 #mode flag back to polling
+                        # turn_CW = True #restored to original value
+                        # wander = True #go back to wandering
+                        # continue
+
+                        #safe mode then stop
+                        print("exit")
+                        time.sleep(0.2)
+                        ser.write('\x83')#safe mode
+                        time.sleep(0.2)
+                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        time.sleep(0.2)
+                        #stop command when we are done working
+                        ser.write('\xAD') #stop
+                        GPIO.cleanup()
+                        ser.close()
+                        break 
+                # turn CCW     
+                else:
+                    print('in CCW turn')
+                    print("moving right wheels but not left wheels")
+                    ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
+                    #time.sleep(3.5)
+                    # timer version with quit button check
+                    start = time.time()
+                    while(time.time() - start < 3):
+                        print("")    
+                    turn_CW = True
+
+
+                    #move forward a little bit
+                    ser.write('\x92\x00\x6F\x00\x6F')
+                    time.sleep(0.2)
+                    #then check ultrasound
+                    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+
+
+                    
+                    if (LEFT_UNDER == False and RIGHT_UNDER == False):
+                        #sysRunning_flag = False
+                        #break
+                        print("In end condition. Return to wandering and polling")
+                        ser.write('\x92\x00\x00\x00\x00')
+
+                        # #rather than breaking out of the loop...
+                        # modeFlag = 0 #mode flag back to polling
+                        # turn_CW = True #restored to original value
+                        # wander = True #go back to wandering
+                        # continue
+                        print("exit")
+                        time.sleep(0.2)
+                        ser.write('\x83')#safe mode
+                        time.sleep(0.2)
+                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        time.sleep(0.2)
+                        #stop command when we are done working
+                        ser.write('\xAD') #stop
+                        GPIO.cleanup()
+                        ser.close()
+                        break 
+
+
+
+
+
+                
 
 
 
