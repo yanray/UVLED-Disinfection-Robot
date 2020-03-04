@@ -47,6 +47,7 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 
 
 ## variables for robot turning under table
+moveToCorner = True
 turn_CW = True      # turn clockwise
 clean = False
 turn_time = 0
@@ -267,102 +268,112 @@ try:
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
-                print("left " + str(LEFT_UNDER))
-                print("right "+ str(RIGHT_UNDER))
-                ser.write('\x80') #start
-                time.sleep(0.2)
-                ser.write('\x83') #safe mode
-                time.sleep(0.2)
-                ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-                time.sleep(0.1)
 
-                print("in align")
-                align()
-                ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-                print("wait 0.2 sec")
-                time.sleep(0.2)
-
-                #moveBackwards
-                # print("moving backwards")
-                # ser.write('\x92\xFF\x91\xFF\x91')
-                # while(RIGHT_UNDER or LEFT_UNDER):
-                #     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,15)
-                #     time.sleep(0.01)
-                #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,15)
-                #     time.sleep(0.01)
-
-                
-
-
-                #finished align, now rotate left
-                ser.write('\x92\x00\x6F\xFF\x91')#Turn in place counter-clockwise = 1 = 0x0001 
-                #countdown on when to stop. Stop when ultrasound doesn't detect table
-                print("in c clockwise")
-                while(C_ClockWise):
-                    dist = ultrasound(frontTrigPin, frontEchoPin)
-                    #print("dist is: "+str(dist))
-                    
-                    if(dist > 50):
-                        print("done with counter clockwise")
-                        C_ClockWise = False
-                #may need to turn C_ClockWise back to True later
-
-                
-                
-
-                #move forward until we don't detect a table
-                ser.write('\x92\x00\x00\x00\x00')
-                time.sleep(0.2)
-                print("moving forward")
-                #code to move forward
-                ser.write('\x92\x00\x6F\x00\x6F')
-                
-
-                #countdown to move forward
-                while(RIGHT_UNDER):
-                    #print(RIGHT_UNDER)
-                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                #first time through, need to move to corner
+                if(moveToCorner):
+                    print("left " + str(LEFT_UNDER))
+                    print("right "+ str(RIGHT_UNDER))
+                    ser.write('\x80') #start
+                    time.sleep(0.2)
+                    ser.write('\x83') #safe mode
+                    time.sleep(0.2)
+                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     time.sleep(0.1)
-                ser.write('\x92\x00\x00\x00\x00')
-                time.sleep(0.2)
 
-                
+                    print("in align")
+                    align()
+                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+                    print("wait 0.2 sec")
+                    time.sleep(0.2)
 
-                #moveBackwards
-                # print("moving backwards")
-                # ser.write('\x92\xFF\x91\xFF\x91')
-                # while(RIGHT_UNDER==False):
-                #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-                #     time.sleep(0.1)
-                
+                    #moveBackwards
+                    # print("moving backwards")
+                    # ser.write('\x92\xFF\x91\xFF\x91')
+                    # while(RIGHT_UNDER or LEFT_UNDER):
+                    #     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,15)
+                    #     time.sleep(0.01)
+                    #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,15)
+                    #     time.sleep(0.01)
 
-                ser.write('\x92\x00\x00\x00\x00')
-                time.sleep(0.2)
-
-
-                #finished moving forward, now rotate right
-                ser.write('\x92\xFF\x91\x00\x6F')
-                time.sleep(0.2)
-                ClockWise = True
-                #ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
-                print("clockwise")
+                    
 
 
-                #countdown on when to stop turning clockwise
-                while(ClockWise):
-                    dist = ultrasound(frontTrigPin, frontEchoPin)
-                    #print("dist is: "+str(dist))
-                    if(dist < 25):
-                        ClockWise = False
-                #may need to change ClockWise back to True
+                    #finished align, now rotate left
+                    ser.write('\x92\x00\x6F\xFF\x91')#Turn in place counter-clockwise = 1 = 0x0001 
+                    #countdown on when to stop. Stop when ultrasound doesn't detect table
+                    print("in c clockwise")
+                    while(C_ClockWise):
 
-                print("break")
-                ser.write('\x92\x00\x00\x00\x00')
-                time.sleep(0.2)
-                ser.write('\xAD') #stop
-                GPIO.cleanup()
-                ser.close()
-                break
+                        distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
+                        #print("dist is: "+str(dist))
+
+                        #if dist > 25
+                        if(distcheck == False):
+                            print("done with counter clockwise")
+                            C_ClockWise = False
+                    #may need to turn C_ClockWise back to True later
+                    C_ClockWise = True
+                    
+                    
+
+                    #move forward until we don't detect a table
+                    ser.write('\x92\x00\x00\x00\x00')
+                    time.sleep(0.2)
+                    print("moving forward")
+                    #code to move forward
+                    ser.write('\x92\x00\x6F\x00\x6F')
+                    
+
+                    #countdown to move forward
+                    while(RIGHT_UNDER):
+                        #print(RIGHT_UNDER)
+                        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                        time.sleep(0.1)
+                    ser.write('\x92\x00\x00\x00\x00')
+                    time.sleep(0.2)
+
+                    
+
+                    #moveBackwards
+                    # print("moving backwards")
+                    # ser.write('\x92\xFF\x91\xFF\x91')
+                    # while(RIGHT_UNDER==False):
+                    #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    #     time.sleep(0.1)
+                    
+
+                    ser.write('\x92\x00\x00\x00\x00')
+                    time.sleep(0.2)
+
+
+                    #finished moving forward, now rotate right
+                    ser.write('\x92\xFF\x91\x00\x6F')
+                    time.sleep(0.2)
+                    ClockWise = True
+                    #ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
+                    print("clockwise")
+
+
+                    #countdown on when to stop turning clockwise
+                    while(ClockWise):
+                        distcheck = ultrasound(frontTrigPin, frontEchoPin,threshold)
+                        #print("dist is: "+str(dist))
+                        #if dist < 25
+                        if(distcheck):
+                            ClockWise = False
+                    #may need to change ClockWise back to True
+                    ClockWise = True
+
+                    #set move to corner to false after initial run is done
+                    moveToCorner = False
+
+                    print("break")
+                    ser.write('\x92\x00\x00\x00\x00')
+                    time.sleep(0.2)
+                    ser.write('\xAD') #stop
+                    GPIO.cleanup()
+                    ser.close()
+                    break
 
 
                 #now mow
@@ -395,6 +406,7 @@ try:
                         #break
                         print("In end condition. Return to wandering and polling")
                         ser.write('\x92\x00\x00\x00\x00')
+                        moveToCorner = True #done mowing, next time we mow need to find corner
 
                         # #rather than breaking out of the loop...
                         # modeFlag = 0 #mode flag back to polling
@@ -441,6 +453,7 @@ try:
                         #break
                         print("In end condition. Return to wandering and polling")
                         ser.write('\x92\x00\x00\x00\x00')
+                        moveToCorner = True #done mowing, next time we mow need to find corner
 
                         # #rather than breaking out of the loop...
                         # modeFlag = 0 #mode flag back to polling
