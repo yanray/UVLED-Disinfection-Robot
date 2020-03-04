@@ -369,7 +369,12 @@ try:
                 print("mowing...")
                 mow() #mow just moves forward until no sensors are under the table
 
-                
+                #TODO:
+                #mow, make sure L and R are under table
+                #move L or R based on which type of turn
+                #until it is under a table while keeping other wheel still
+                #align
+                #continue mowing
 
 
                 #now to handle turning
