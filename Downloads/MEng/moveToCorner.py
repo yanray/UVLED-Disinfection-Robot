@@ -47,6 +47,7 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 
 
 ## variables for robot turning under table
+global moveToCorner
 moveToCorner = True
 turn_CW = True      # turn clockwise
 clean = False
@@ -142,6 +143,11 @@ def align():
     global sysRunning_flag
     print("in align")
     ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
+
+    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+    time.sleep(0.01)
+    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+    under = LEFT_UNDER and RIGHT_UNDER
     while (not under):
 
         # if left IR sensor fired, set left wheel speed to zero, 
@@ -174,15 +180,19 @@ def mow():
     global under
     global sysRunning_flag
     print("mow")
+
+    
+
     # mow lawn with lights on
-    while(RIGHT_UNDER or LEFT_UNDER):
-        #print("In mow. Just moving forward")
-        ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
-        #RIGHT_UNDER = not GPIO.input(5) #right IR, check for IR while traversing table to know when to break loop
-        #LEFT_UNDER = not GPIO.input(6)  #left IR, check for IR while traversing table to know when to break loop
+    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+    time.sleep(0.01)
+    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+    ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
+    while(LEFT_UNDER or RIGHT_UNDER):
         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
         time.sleep(0.01)
         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+        
 
 # ultrasound: to get the distance measured by ultrasound
 def ultrasound(trigPin, echoPin):
@@ -268,7 +278,7 @@ try:
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
-
+                print("move to corner value: " + str(moveToCorner))
                 #first time through, need to move to corner
                 if(moveToCorner):
                     print("left " + str(LEFT_UNDER))
@@ -285,17 +295,6 @@ try:
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     print("wait 0.2 sec")
                     time.sleep(0.2)
-
-                    #moveBackwards
-                    # print("moving backwards")
-                    # ser.write('\x92\xFF\x91\xFF\x91')
-                    # while(RIGHT_UNDER or LEFT_UNDER):
-                    #     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,15)
-                    #     time.sleep(0.01)
-                    #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,15)
-                    #     time.sleep(0.01)
-
-                    
 
 
                     #finished align, now rotate left
@@ -332,18 +331,12 @@ try:
                     ser.write('\x92\x00\x00\x00\x00')
                     time.sleep(0.2)
 
-                    
-
                     #moveBackwards
-                    # print("moving backwards")
-                    # ser.write('\x92\xFF\x91\xFF\x91')
-                    # while(RIGHT_UNDER==False):
-                    #     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-                    #     time.sleep(0.1)
-                    
-
+                    print("moving backwards")
+                    ser.write('\x92\xFF\x91\xFF\x91')
+                    while(RIGHT_UNDER==False):
+                        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     ser.write('\x92\x00\x00\x00\x00')
-                    time.sleep(0.2)
 
 
                     #finished moving forward, now rotate right
@@ -353,10 +346,11 @@ try:
                     #ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
                     print("clockwise")
 
+                    
 
                     #countdown on when to stop turning clockwise
                     while(ClockWise):
-                        distcheck = ultrasound(frontTrigPin, frontEchoPin,threshold)
+                        distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
                         #print("dist is: "+str(dist))
                         #if dist < 25
                         if(distcheck):
@@ -367,18 +361,15 @@ try:
                     #set move to corner to false after initial run is done
                     moveToCorner = False
 
-                    print("break")
-                    ser.write('\x92\x00\x00\x00\x00')
-                    time.sleep(0.2)
-                    ser.write('\xAD') #stop
-                    GPIO.cleanup()
-                    ser.close()
-                    break
+                    
 
-
+                    
+                    
                 #now mow
                 print("mowing...")
                 mow() #mow just moves forward until no sensors are under the table
+
+                
 
 
                 #now to handle turning
@@ -386,18 +377,30 @@ try:
                 if(turn_CW):
                     print('in CW turn')
                     print("moving left wheels but not right")
-                    ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
+                    ser.write('\x92\x00\x00\x00\x8F') #move left wheels not right wheels
                     #time.sleep(3.5)
                     # timer version with quit button check
                     start = time.time()
-                    while(time.time() - start < 3.5):
-                        print("")
+                    while(time.time() - start < 3.6):
+                        pass
                     turn_CW = False
                     
+                    align()
+
+                    # print("break")
+                    # ser.write('\x92\x00\x00\x00\x00')
+                    # time.sleep(0.2)
+                    # ser.write('\xAD') #stop
+                    # GPIO.cleanup()
+                    # ser.close()
+                    # break
+
                     #move forward a little bit
                     ser.write('\x92\x00\x6F\x00\x6F')
-                    time.sleep(0.2)
+                    pass
+                    time.sleep(0.5)
                     #then check ultrasound
+                    print("Checking if we still need to mow")
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
 
@@ -426,23 +429,27 @@ try:
                         GPIO.cleanup()
                         ser.close()
                         break 
+
                 # turn CCW     
                 else:
                     print('in CCW turn')
                     print("moving right wheels but not left wheels")
-                    ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
+                    ser.write('\x92\x00\x8F\x00\x00') #right wheel moves and left doesn't
                     #time.sleep(3.5)
                     # timer version with quit button check
                     start = time.time()
-                    while(time.time() - start < 3):
-                        print("")    
+                    while(time.time() - start < 3.6):
+                        pass   
                     turn_CW = True
 
+                    align()
 
                     #move forward a little bit
                     ser.write('\x92\x00\x6F\x00\x6F')
-                    time.sleep(0.2)
+                    pass
+                    time.sleep(0.5)
                     #then check ultrasound
+                    print("Checking if we still need to mow")
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
 
@@ -471,6 +478,8 @@ try:
                         GPIO.cleanup()
                         ser.close()
                         break 
+
+                    
 
 
 
