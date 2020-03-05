@@ -176,25 +176,31 @@ def align():
 
 
 # mow the lawn algorithmdisplayLayer. All this does is go forward and turn on LEDs
-def mow():
+def mow(firstTimeMow):
     global RIGHT_UNDER
     global LEFT_UNDER
     global under
     global sysRunning_flag
     print("mow")
-
-    
-
     # mow lawn with lights on
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
     ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
+
+    #boolean to determine when to stop
+    stop = False
+
+    if(firstTimeMow==False):
+        if((LEFT_UNDER and RIGHT_UNDER==False) or (LEFT_UNDER==False and RIGHT_UNDER)):
+                print("Stop mowing after this!")
+                stop = True
+
     while(LEFT_UNDER or RIGHT_UNDER):
         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
         time.sleep(0.01)
         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-        
+    return stop
 
 # ultrasound: to get the distance measured by ultrasound
 def ultrasound(trigPin, echoPin):
@@ -362,20 +368,41 @@ try:
 
                     #set move to corner to false after initial run is done
                     moveToCorner = False
+                    #now mow
+                    print("mowing for the first time")
+                    #True means it is our first time mowing
+                    mow(True) #mow just moves forward until no sensors are under the table
 
                     
 
                     
                     
-                #now mow
-                print("mowing...")
-                mow() #mow just moves forward until no sensors are under the table
+                print("Not the first time mowing")
+                stopCondition = mow(False)#False means not the first time mowing
+                if(stopCondition==True):
+                    print("In end condition. Return to wandering and polling")
+                    ser.write('\x92\x00\x00\x00\x00')
+                    moveToCorner = True #done mowing, next time we mow need to find corner
+
+                    #safe mode then stop
+                    print("exit")
+                    time.sleep(0.2)
+                    ser.write('\x83')#safe mode
+                    time.sleep(0.2)
+                    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                    time.sleep(0.2)
+                    #stop command when we are done working
+                    ser.write('\xAD') #stop
+                    GPIO.cleanup()
+                    ser.close()
+                    break 
+
 
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('in CW turn')
-                    print("moving left wheels but not right")
+                    #print("moving left wheels but not right")
                     ser.write('\x92\x00\x00\x00\x8F') #move left wheels not right wheels
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
@@ -394,45 +421,45 @@ try:
                     # ser.close()
                     # break
 
-                    #move forward a little bit
-                    ser.write('\x92\x00\x6F\x00\x6F')
-                    pass
-                    time.sleep(0.5)
-                    #then check ultrasound
-                    print("Checking if we still need to mow")
-                    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
-                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    # #move forward a little bit
+                    # ser.write('\x92\x00\x6F\x00\x6F')
+                    # pass
+                    # time.sleep(0.5)
+                    # #then check ultrasound
+                    # print("Checking if we still need to mow")
+                    # LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    # RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
 
-                    if (LEFT_UNDER== False and RIGHT_UNDER==False):
-                        #sysRunning_flag = False
-                        #break
-                        print("In end condition. Return to wandering and polling")
-                        ser.write('\x92\x00\x00\x00\x00')
-                        moveToCorner = True #done mowing, next time we mow need to find corner
+                    # if (LEFT_UNDER== False and RIGHT_UNDER==False):
+                    #     #sysRunning_flag = False
+                    #     #break
+                    #     print("In end condition. Return to wandering and polling")
+                    #     ser.write('\x92\x00\x00\x00\x00')
+                    #     moveToCorner = True #done mowing, next time we mow need to find corner
 
-                        # #rather than breaking out of the loop...
-                        # modeFlag = 0 #mode flag back to polling
-                        # turn_CW = True #restored to original value
-                        # wander = True #go back to wandering
-                        # continue
+                    #     # #rather than breaking out of the loop...
+                    #     # modeFlag = 0 #mode flag back to polling
+                    #     # turn_CW = True #restored to original value
+                    #     # wander = True #go back to wandering
+                    #     # continue
 
-                        #safe mode then stop
-                        print("exit")
-                        time.sleep(0.2)
-                        ser.write('\x83')#safe mode
-                        time.sleep(0.2)
-                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        time.sleep(0.2)
-                        #stop command when we are done working
-                        ser.write('\xAD') #stop
-                        GPIO.cleanup()
-                        ser.close()
-                        break 
+                    #     #safe mode then stop
+                    #     print("exit")
+                    #     time.sleep(0.2)
+                    #     ser.write('\x83')#safe mode
+                    #     time.sleep(0.2)
+                    #     ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                    #     time.sleep(0.2)
+                    #     #stop command when we are done working
+                    #     ser.write('\xAD') #stop
+                    #     GPIO.cleanup()
+                    #     ser.close()
+                    #     break 
 
                 # turn CCW     
                 else:
                     print('in CCW turn')
-                    print("moving right wheels but not left wheels")
+                    #print("moving right wheels but not left wheels")
                     ser.write('\x92\x00\x8F\x00\x00') #right wheel moves and left doesn't
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -443,40 +470,40 @@ try:
 
                     align()
 
-                    #move forward a little bit
-                    ser.write('\x92\x00\x6F\x00\x6F')
-                    pass
-                    time.sleep(0.5)
-                    #then check ultrasound
-                    print("Checking if we still need to mow")
-                    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
-                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    # #move forward a little bit
+                    # ser.write('\x92\x00\x6F\x00\x6F')
+                    # pass
+                    # time.sleep(0.5)
+                    # #then check ultrasound
+                    # print("Checking if we still need to mow")
+                    # LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    # RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
 
 
                     
-                    if (LEFT_UNDER == False and RIGHT_UNDER == False):
-                        #sysRunning_flag = False
-                        #break
-                        print("In end condition. Return to wandering and polling")
-                        ser.write('\x92\x00\x00\x00\x00')
-                        moveToCorner = True #done mowing, next time we mow need to find corner
+                    # if (LEFT_UNDER == False and RIGHT_UNDER == False):
+                    #     #sysRunning_flag = False
+                    #     #break
+                    #     print("In end condition. Return to wandering and polling")
+                    #     ser.write('\x92\x00\x00\x00\x00')
+                    #     moveToCorner = True #done mowing, next time we mow need to find corner
 
-                        # #rather than breaking out of the loop...
-                        # modeFlag = 0 #mode flag back to polling
-                        # turn_CW = True #restored to original value
-                        # wander = True #go back to wandering
-                        # continue
-                        print("exit")
-                        time.sleep(0.2)
-                        ser.write('\x83')#safe mode
-                        time.sleep(0.2)
-                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        time.sleep(0.2)
-                        #stop command when we are done working
-                        ser.write('\xAD') #stop
-                        GPIO.cleanup()
-                        ser.close()
-                        break 
+                    #     # #rather than breaking out of the loop...
+                    #     # modeFlag = 0 #mode flag back to polling
+                    #     # turn_CW = True #restored to original value
+                    #     # wander = True #go back to wandering
+                    #     # continue
+                    #     print("exit")
+                    #     time.sleep(0.2)
+                    #     ser.write('\x83')#safe mode
+                    #     time.sleep(0.2)
+                    #     ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                    #     time.sleep(0.2)
+                    #     #stop command when we are done working
+                    #     ser.write('\xAD') #stop
+                    #     GPIO.cleanup()
+                    #     ser.close()
+                    #     break 
 
                     
 
