@@ -369,25 +369,17 @@ try:
                 print("mowing...")
                 mow() #mow just moves forward until no sensors are under the table
 
-                #TODO:
-                #mow, make sure L and R are under table
-                #move L or R based on which type of turn
-                #until it is under a table while keeping other wheel still
-                #align
-                #continue mowing
-
-
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('in CW turn')
                     print("moving left wheels but not right")
                     ser.write('\x92\x00\x00\x00\x8F') #move left wheels not right wheels
-                    #time.sleep(3.5)
-                    # timer version with quit button check
-                    start = time.time()
-                    while(time.time() - start < 3.6):
-                        pass
+
+                    LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    #keep rotating left wheels while left sensor is not yet under table
+                    while(LEFT_UNDER==False):
+                        LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     turn_CW = False
                     
                     align()
@@ -440,11 +432,11 @@ try:
                     print('in CCW turn')
                     print("moving right wheels but not left wheels")
                     ser.write('\x92\x00\x8F\x00\x00') #right wheel moves and left doesn't
-                    #time.sleep(3.5)
-                    # timer version with quit button check
-                    start = time.time()
-                    while(time.time() - start < 3.6):
-                        pass   
+
+                    RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    #keep rotating left wheels while left sensor is not yet under table
+                    while(RIGHT_UNDER==False):
+                        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     turn_CW = True
 
                     align()
