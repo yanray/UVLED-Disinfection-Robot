@@ -142,6 +142,8 @@ def align():
     global rightSpeed
     global sysRunning_flag
     print("in align")
+    leftSpeed = '\x00\x8f'
+    rightSpeed = '\x00\x8f'
     ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
 
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
