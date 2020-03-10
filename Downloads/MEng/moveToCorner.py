@@ -8,15 +8,8 @@ sysRunning_flag = True
 ser = serial.Serial(port = '/dev/ttyUSB0',baudrate=115200)
 ser.flushOutput()
 modeFlag = 0
-
-#start off random walk
-#ultrasound detects
-#align
-#turn 90 CCW
-#move forward until nothing detected
-#turn 90 CW
-#mow
-
+#True = Roomba is not wandering but should be
+wander = False
 
 # pin for ultrasound // trigPin, echoPin
 frontTrigPin = 20
@@ -51,8 +44,6 @@ global moveToCorner
 moveToCorner = True
 turn_CW = True      # turn clockwise
 clean = False
-turn_time = 0
-turn_limit = 7
 mowing = False
 
 # hex number
@@ -69,22 +60,6 @@ under = LEFT_UNDER and RIGHT_UNDER      # whether robot is under table, while ve
 
 
 
-
-# GPIO5_callback AND GPIO6_callback are call back functions when IR sensors are fired, used to align robot vertical with table edge. 
-# def GPIO5_callback(channel):
-#     global RIGHT_UNDER
-#     global mowing
-#     ClockWise = False # if the left IR is under the table, stop truing ClockWise
-#     if (not mowing):
-#         RIGHT_UNDER = not GPIO.input(5)
-
-# def GPIO6_callback(channel):
-#     global LEFT_UNDER
-#     global mowing
-#     C_ClockWise = False # if the left IR is under the table, stop truing CounterClockWise
-#     if (not mowing):
-#         LEFT_UNDER = not GPIO.input(6)
-
 # safe button to quit the system 
 def GPIO27_callback(channel):
     print ("")
@@ -95,10 +70,6 @@ def GPIO27_callback(channel):
 
 # GPIO initial setup 
 GPIO.setmode(GPIO.BCM)   #set up GPIO pins
-
-# IR sensors
-#GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-#GPIO.setup(6, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # quit button
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -114,9 +85,19 @@ GPIO.setup(rightTrigPin, GPIO.OUT, initial = GPIO.LOW)
 GPIO.setup(rightEchoPin, GPIO.IN)
 
 ## add callback event
-#GPIO.add_event_detect(5, GPIO.FALLING, callback=GPIO5_callback, bouncetime = 150)
-#GPIO.add_event_detect(6, GPIO.FALLING, callback=GPIO6_callback, bouncetime = 150)
 GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=300)
+
+#changes Roomba into clean mode aka wandering
+def toCleanMode():
+    global wander
+    print("Going to clean mode")
+    time.sleep(0.2)
+    ser.write('\x80') #start
+
+    time.sleep(0.2)
+    ser.write(CLEANMODE) #clean mode
+    time.sleep(0.2)
+    wander = False
 
 #checks if an ultrasound sensor is under a surface, specified by threshold height. 
 def checkIfUnder(trigPin,echoPin, threshold):
@@ -165,9 +146,6 @@ def align():
         if(RIGHT_UNDER):
             #print("Right IR under, stop right wheels")
             rightSpeed = '\x00\x00'
-        #else:
-            #rightSpeed = '\x00\x8F'
-            #leftSpeed = '\x00\x8F'
 
         #update wheel speed
         ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
@@ -219,44 +197,44 @@ def ultrasound(trigPin, echoPin):
     return (t2 - t1) * 340 * 100 / 2			# calculate distance by time 
 
 
-# a timer to trig ultrasound
-def do_every(period,f,*args):
-    def g_tick():
-        t = time.time()
-        count = 0
-        while True:
-            count += 1
-            yield max(t + count*period - time.time(),0)
-    g = g_tick()
-    while True:
-        time.sleep(next(g))
-        f(*args)
+# # a timer to trig ultrasound
+# def do_every(period,f,*args):
+#     def g_tick():
+#         t = time.time()
+#         count = 0
+#         while True:
+#             count += 1
+#             yield max(t + count*period - time.time(),0)
+#     g = g_tick()
+#     while True:
+#         time.sleep(next(g))
+#         f(*args)
 
 
-def poll_ultrasound():
-    global dist
-    global modeFlag
+# def poll_ultrasound():
+#     global dist
+#     global modeFlag
     
-    #print('calculating distance....')displayLayer
-    dist = ultrasound(frontTrigPin, frontEchoPin)
-    #print('Distance: %0.2f cm' %dist)
+#     #print('calculating distance....')displayLayer
+#     dist = ultrasound(frontTrigPin, frontEchoPin)
+#     #print('Distance: %0.2f cm' %dist)
 
 
-    # if the Roomba is under the table, 
-    # we try to make it turn left until it arrives the left corner
-    if(dist < 25):
-        print('object detected')
-        ser.write('\x83')
-        time.sleep(0.2)
-        ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-        time.sleep(0.1)
-        modeFlag = 2
+#     # if the Roomba is under the table, 
+#     # we try to make it turn left until it arrives the left corner
+#     if(dist < 25):
+#         print('object detected')
+#         ser.write('\x83')
+#         time.sleep(0.2)
+#         ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+#         time.sleep(0.1)
+#         modeFlag = 2
 
-        # After we can move under the table vertically, we need to turn CCk 90 degress 
-        # untill the untrasound sensor moves out of the table
-    else:
-        t = Timer(0.2, poll_ultrasound) #after 0.2 seconds, poll ultrasound again
-        t.start()
+#         # After we can move under the table vertically, we need to turn CCk 90 degress 
+#         # untill the untrasound sensor moves out of the table
+#     else:
+#         t = Timer(0.2, poll_ultrasound) #after 0.2 seconds, poll ultrasound again
+#         t.start()
 
 
 #driver code
@@ -289,8 +267,8 @@ try:
                 print("move to corner value: " + str(moveToCorner))
                 #first time through, need to move to corner
                 if(moveToCorner):
-                    print("left " + str(LEFT_UNDER))
-                    print("right "+ str(RIGHT_UNDER))
+                    #print("left " + str(LEFT_UNDER))
+                    #print("right "+ str(RIGHT_UNDER))
                     ser.write('\x80') #start
                     time.sleep(0.2)
                     ser.write('\x83') #safe mode
@@ -301,7 +279,7 @@ try:
                     print("in align")
                     align()
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
-                    print("wait 0.2 sec")
+                    #print("wait 0.2 sec")
                     time.sleep(0.2)
 
 
@@ -380,7 +358,7 @@ try:
                 print("Not the first time mowing")
                 stopCondition = mow(False)#False means not the first time mowing
                 if(stopCondition==True):
-                    print("In end condition. Return to wandering and polling")
+                    print("In end condition b/c of stop condition. Return to wandering and polling")
                     ser.write('\x92\x00\x00\x00\x00')
                     moveToCorner = True #done mowing, next time we mow need to find corner
 
@@ -407,54 +385,37 @@ try:
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     #keep rotating left wheels while left sensor is not yet under table
+                    startTime = time.time() #timer to check if a turn is taking too long
                     while(LEFT_UNDER==False):
                         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    endTime = time.time()
+                    #check if the elapsed time is too long.
+                    #this implies we need to do a 180 turn and then wander
+                    #the time that is considered "too long" can be modified
+                    if(endTime - startTime > 4):
+                        #stop, turn 180, wander
+                        print("In end condition b/c of timing. Return to wandering and polling")
+                        ser.write('\x92\x00\x00\x00\x00')
+                        moveToCorner = True #done mowing, next time we mow need to find corner
+
+                        #safe mode then stop
+                        print("exit")
+                        time.sleep(0.2)
+                        ser.write('\x83')#safe mode
+                        time.sleep(0.2)
+                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        time.sleep(0.2)
+                        #stop command when we are done working
+                        ser.write('\xAD') #stop
+                        GPIO.cleanup()
+                        ser.close()
+                        break 
+
+
                     turn_CW = False
                     
                     align()
-
-                    # print("break")
-                    # ser.write('\x92\x00\x00\x00\x00')
-                    # time.sleep(0.2)
-                    # ser.write('\xAD') #stop
-                    # GPIO.cleanup()
-                    # ser.close()
-                    # break
-
-                    # #move forward a little bit
-                    # ser.write('\x92\x00\x6F\x00\x6F')
-                    # pass
-                    # time.sleep(0.5)
-                    # #then check ultrasound
-                    # print("Checking if we still need to mow")
-                    # LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
-                    # RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-
-                    # if (LEFT_UNDER== False and RIGHT_UNDER==False):
-                    #     #sysRunning_flag = False
-                    #     #break
-                    #     print("In end condition. Return to wandering and polling")
-                    #     ser.write('\x92\x00\x00\x00\x00')
-                    #     moveToCorner = True #done mowing, next time we mow need to find corner
-
-                    #     # #rather than breaking out of the loop...
-                    #     # modeFlag = 0 #mode flag back to polling
-                    #     # turn_CW = True #restored to original value
-                    #     # wander = True #go back to wandering
-                    #     # continue
-
-                    #     #safe mode then stop
-                    #     print("exit")
-                    #     time.sleep(0.2)
-                    #     ser.write('\x83')#safe mode
-                    #     time.sleep(0.2)
-                    #     ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                    #     time.sleep(0.2)
-                    #     #stop command when we are done working
-                    #     ser.write('\xAD') #stop
-                    #     GPIO.cleanup()
-                    #     ser.close()
-                    #     break 
+                 
 
                 # turn CCW     
                 else:
@@ -464,8 +425,29 @@ try:
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     #keep rotating left wheels while left sensor is not yet under table
+                    startTime = time.time()
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    endTime = time.time()
+                    if(endTime - startTime > 4):
+                        #stop, turn 180, wander
+                        print("In end condition b/c of timing. Return to wandering and polling")
+                        ser.write('\x92\x00\x00\x00\x00')
+                        moveToCorner = True #done mowing, next time we mow need to find corner
+
+                        #safe mode then stop
+                        print("exit")
+                        time.sleep(0.2)
+                        ser.write('\x83')#safe mode
+                        time.sleep(0.2)
+                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        time.sleep(0.2)
+                        #stop command when we are done working
+                        ser.write('\xAD') #stop
+                        GPIO.cleanup()
+                        ser.close()
+                        break 
+
                     turn_CW = True
 
                     align()
