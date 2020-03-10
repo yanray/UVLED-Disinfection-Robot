@@ -26,11 +26,11 @@ threshold = 25
 dist = 0
 
 ser.write('\x80') #start
-print("started")
+print("Started")
 
 time.sleep(0.2)
 ser.write('\x87') #clean mode
-print("clean")
+print("Wandering")
 time.sleep(0.1)
 
 global ClockWise
@@ -122,7 +122,7 @@ def align():
     global leftSpeed
     global rightSpeed
     global sysRunning_flag
-    print("in align")
+    print("In align")
     leftSpeed = '\x00\x8f'
     rightSpeed = '\x00\x8f'
     ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
@@ -159,7 +159,7 @@ def mow(firstTimeMow):
     global LEFT_UNDER
     global under
     global sysRunning_flag
-    print("mow")
+    print("In mow")
     # mow lawn with lights on
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
@@ -244,7 +244,7 @@ try:
             #print("In modeflag 0")
             frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
             if(frontUnder):
-                print("object detected")
+                print("Object detected by front ultrasound")
                 modeFlag = 2
                 ser.write('\x83')
                 time.sleep(0.2)
@@ -264,9 +264,10 @@ try:
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the IR sensors are under the table
-                print("move to corner value: " + str(moveToCorner))
+                #print("Move to corner value: " + str(moveToCorner))
                 #first time through, need to move to corner
                 if(moveToCorner):
+                    print("Moving to table corner")
                     #print("left " + str(LEFT_UNDER))
                     #print("right "+ str(RIGHT_UNDER))
                     ser.write('\x80') #start
@@ -276,7 +277,6 @@ try:
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     time.sleep(0.1)
 
-                    print("in align")
                     align()
                     ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
                     #print("wait 0.2 sec")
@@ -286,7 +286,7 @@ try:
                     #finished align, now rotate left
                     ser.write('\x92\x00\x6F\xFF\x91')#Turn in place counter-clockwise = 1 = 0x0001 
                     #countdown on when to stop. Stop when ultrasound doesn't detect table
-                    print("in c clockwise")
+                    print("In counter clockwise turn.")
                     while(C_ClockWise):
 
                         distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
@@ -294,7 +294,7 @@ try:
 
                         #if dist > 25
                         if(distcheck == False):
-                            print("done with counter clockwise")
+                            print("Done with counter clockwise")
                             C_ClockWise = False
                     #may need to turn C_ClockWise back to True later
                     C_ClockWise = True
@@ -304,7 +304,7 @@ try:
                     #move forward until we don't detect a table
                     ser.write('\x92\x00\x00\x00\x00')
                     time.sleep(0.2)
-                    print("moving forward")
+                    print("Moving forward")
                     #code to move forward
                     ser.write('\x92\x00\x6F\x00\x6F')
                     
@@ -318,7 +318,7 @@ try:
                     time.sleep(0.2)
 
                     #moveBackwards
-                    print("moving backwards")
+                    print("Moving backwards")
                     ser.write('\x92\xFF\x91\xFF\x91')
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -330,7 +330,7 @@ try:
                     time.sleep(0.2)
                     ClockWise = True
                     #ser.write('\x92\x0F\x0F\x0F\x0F') #turn in place clockwise
-                    print("clockwise")
+                    print("Moving clockwise")
 
                     
 
@@ -343,11 +343,11 @@ try:
                             ClockWise = False
                     #may need to change ClockWise back to True
                     ClockWise = True
-
+                    print("Finished moving ot the corner")
                     #set move to corner to false after initial run is done
                     moveToCorner = False
                     #now mow
-                    print("mowing for the first time")
+                    print("Entering lawn mowing algorithm for the first time")
                     #True means it is our first time mowing
                     mow(True) #mow just moves forward until no sensors are under the table
 
@@ -355,10 +355,10 @@ try:
 
                     
                     
-                print("Not the first time mowing")
+                print("Not the first time in lawn mowing algorithm")
                 stopCondition = mow(False)#False means not the first time mowing
                 if(stopCondition==True):
-                    print("In end condition b/c of stop condition. Return to wandering and polling")
+                    print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
                     ser.write('\x92\x00\x00\x00\x00')
                     moveToCorner = True #done mowing, next time we mow need to find corner
 
@@ -379,7 +379,7 @@ try:
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
-                    print('in CW turn')
+                    print('In clockwise turn')
                     #print("moving left wheels but not right")
                     ser.write('\x92\x00\x00\x00\x8F') #move left wheels not right wheels
 
@@ -392,9 +392,10 @@ try:
                     #check if the elapsed time is too long.
                     #this implies we need to do a 180 turn and then wander
                     #the time that is considered "too long" can be modified
+                    print("Time spent in turn: "+str(endTime-startTime))
                     if(endTime - startTime > 4):
                         #stop, turn 180, wander
-                        print("In end condition b/c of timing. Return to wandering and polling")
+                        print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write('\x92\x00\x00\x00\x00')
                         moveToCorner = True #done mowing, next time we mow need to find corner
 
@@ -419,7 +420,7 @@ try:
 
                 # turn CCW     
                 else:
-                    print('in CCW turn')
+                    print('In counter clockwise turn')
                     #print("moving right wheels but not left wheels")
                     ser.write('\x92\x00\x8F\x00\x00') #right wheel moves and left doesn't
 
@@ -429,6 +430,9 @@ try:
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     endTime = time.time()
+
+                    print("Time spent in turn: "+str(endTime-startTime))
+                    
                     if(endTime - startTime > 4):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
