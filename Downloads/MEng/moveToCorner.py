@@ -44,20 +44,24 @@ mowing = False
 leftSpeed = '\x00\x8f'      #PWM mode speed control of Roomba wheels 
 rightSpeed = '\x00\x8f'
 
+START = '\x80'
 STOP = '\xAD'               #stop command
 SAFEMODE = '\x83'           #safe mode, allows for user control
 CLEANMODE = '\x87'          #default cleaning mode
+#command to make the robot wheels stop aka speed of 0. 
+#Command is of form \x move wheel mode \x MSB right wheel \x LSB right wheel \x MSB left wheel \x LSB left wheel
+STOPMOVING = '\x92\x00\x00\00\00' 
 MOTOR_PWM = '\x92'          #controls raw forward and backward motion of Roomba's wheels independently +/-255 is range
 LEFT_UNDER = False          #IR sensor variable to make robot aligned with table edge. 
 RIGHT_UNDER = False         #False if IR sensor doesn't detect anything, True if detects
 under = LEFT_UNDER and RIGHT_UNDER      # whether robot is under table, while vertical with table edge
 
 #initial start up code that starts Roomba and sets it to random wander/clean mode
-ser.write('\x80') #start
+ser.write(START) #start
 print("Started")
 
 time.sleep(0.2)
-ser.write('\x87') #clean mode
+ser.write(CLEANMODE) #clean mode
 print("Wandering")
 time.sleep(0.1)
 
@@ -94,7 +98,7 @@ def toCleanMode():
     global wander
     print("Going to clean mode")
     time.sleep(0.2)
-    ser.write('\x80') #start
+    ser.write(START) #start
 
     time.sleep(0.2)
     ser.write(CLEANMODE) #clean mode
@@ -218,7 +222,7 @@ try:
             if(frontUnder):
                 print("Object detected by front ultrasound")
                 modeFlag = 1
-                ser.write('\x83')
+                ser.write(SAFEMODE)
                 time.sleep(0.2)
                 #code to move forward. May need to change this to stop and then move forward in mode 1
                 ser.write('\x92\x00\x6F\x00\x6F')
@@ -235,16 +239,16 @@ try:
                 #first time through, need to move to corner
                 if(moveToCorner):
                     print("Moving to table corner")
-                    ser.write('\x80') #start
+                    ser.write(START) #start
                     time.sleep(0.2)
-                    ser.write('\x83') #safe mode
+                    ser.write(SAFEMODE) #safe mode
                     time.sleep(0.2)
-                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+                    ser.write(STOPMOVING) #stop wheels moving
                     time.sleep(0.1)
 
                     #Robot has stopped moving and will now align with surface
                     align()
-                    ser.write('\x92\x00\x00\x00\x00') #stop wheels moving
+                    ser.write(STOPMOVING) #stop wheels moving
                     #print("wait 0.2 sec")
                     time.sleep(0.2)
 
@@ -264,7 +268,7 @@ try:
                     
 
                     #move forward until we don't detect a table. This moves the robot to the table corner
-                    ser.write('\x92\x00\x00\x00\x00')
+                    ser.write(STOPMOVING)
                     time.sleep(0.2)
                     print("Moving forward")
                     #code to move forward
@@ -274,7 +278,7 @@ try:
                         #print(RIGHT_UNDER)
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.1)
-                    ser.write('\x92\x00\x00\x00\x00')
+                    ser.write(STOPMOVING)
                     time.sleep(0.2)
 
                     #we found that sometimes the roomba overshoots so this moves backward a little bit
@@ -283,7 +287,7 @@ try:
                     ser.write('\x92\xFF\x91\xFF\x91')
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-                    ser.write('\x92\x00\x00\x00\x00')
+                    ser.write(STOPMOVING)
 
                     #finished moving to the table edge, now rotate right to get in the correct position for mowing
                     ser.write('\x92\xFF\x91\x00\x6F')
@@ -299,7 +303,7 @@ try:
                             ClockWise = False
                     #may need to change ClockWise back to True
                     ClockWise = True
-                    print("Finished moving ot the corner")
+                    print("Finished moving to the corner")
                     #set move to corner to false after initial run is done
                     moveToCorner = False
                     #now mow
@@ -315,7 +319,7 @@ try:
                 stopCondition = mow(False) #False means not the first time mowing
                 if(stopCondition==True):
                     print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
-                    ser.write('\x92\x00\x00\x00\x00')
+                    ser.write(STOPMOVING)
                     moveToCorner = True #done mowing, next time we mow need to find corner
                     #transition back to wandering and polling
                     modeFlag = 0
@@ -358,7 +362,7 @@ try:
                     if(endTime - startTime > 3.9):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
-                        ser.write('\x92\x00\x00\x00\x00')
+                        ser.write(STOPMOVING)
                         moveToCorner = True #done mowing, next time we mow need to find corner
                         #transition back to wandering and polling
                         modeFlag = 0
@@ -370,7 +374,7 @@ try:
                         e = time.time()
                         while(e - s < 2):
                             e = time.time()
-                        ser.write('\x92\x00\x00\x00\x00')                        
+                        ser.write(STOPMOVING)                        
                         continue
 
                         # #safe mode then stop
@@ -408,7 +412,7 @@ try:
                     if(endTime - startTime > 3.9):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
-                        ser.write('\x92\x00\x00\x00\x00')
+                        ser.write(STOPMOVING)
                         moveToCorner = True #done mowing, next time we mow need to find corner
                         #transition back to wandering and polling
                         modeFlag = 0
@@ -420,7 +424,7 @@ try:
                         e = time.time()
                         while(e - s < 2):
                             e = time.time()
-                        ser.write('\x92\x00\x00\x00\x00')
+                        ser.write(STOPMOVING)
                         continue
 
                         # #safe mode then stop
@@ -448,7 +452,7 @@ except KeyboardInterrupt:
     #safe mode then stop
     ser.write(SAFEMODE)
     time.sleep(0.2)
-    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+    ser.write(STOPMOVING) #wheel speed of 0
     time.sleep(0.2)
     #stop command when we are done working
     ser.write(STOP)
