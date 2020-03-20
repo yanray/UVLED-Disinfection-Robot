@@ -209,7 +209,10 @@ def ultrasound(trigPin, echoPin):
 try:    
     while(sysRunning_flag):
         # ultrasound polling and random walk mode
-        if modeFlag == 0:
+        if (modeFlag == 0):
+            #if we need to return to wandering/cleaning mode
+            if(wander == True):
+                toCleanMode()
             #use front sensor to detect surface
             frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
             if(frontUnder):
@@ -314,19 +317,25 @@ try:
                     print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
                     ser.write('\x92\x00\x00\x00\x00')
                     moveToCorner = True #done mowing, next time we mow need to find corner
+                    #transition back to wandering and polling
+                    modeFlag = 0
+                    turn_CW = True #restored to original value
+                    wander = True #go back to wandering
+                    continue
 
-                    #safe mode then stop
-                    print("exit")
-                    time.sleep(0.2)
-                    ser.write('\x83')#safe mode
-                    time.sleep(0.2)
-                    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                    time.sleep(0.2)
-                    #stop command when we are done working
-                    ser.write('\xAD') #stop
-                    GPIO.cleanup()
-                    ser.close()
-                    break 
+
+                    # #safe mode then stop
+                    # print("exit")
+                    # time.sleep(0.2)
+                    # ser.write('\x83')#safe mode
+                    # time.sleep(0.2)
+                    # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                    # time.sleep(0.2)
+                    # #stop command when we are done working
+                    # ser.write('\xAD') #stop
+                    # GPIO.cleanup()
+                    # ser.close()
+                    # break 
 
 
                 #now to handle turning
@@ -346,24 +355,36 @@ try:
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
 
-                    if(endTime - startTime > 4):
+                    if(endTime - startTime > 3.9):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write('\x92\x00\x00\x00\x00')
                         moveToCorner = True #done mowing, next time we mow need to find corner
+                        #transition back to wandering and polling
+                        modeFlag = 0
+                        turn_CW = True #restored to original value
+                        wander = True #go back to wandering
+                        #turn 180 degrees ish, then stop
+                        ser.write('\x92\x00\x00\xFF\x71') #move left wheels backwards
+                        s = time.time()
+                        e = time.time()
+                        while(e - s < 2):
+                            e = time.time()
+                        ser.write('\x92\x00\x00\x00\x00')                        
+                        continue
 
-                        #safe mode then stop
-                        print("exit")
-                        time.sleep(0.2)
-                        ser.write('\x83')#safe mode
-                        time.sleep(0.2)
-                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        time.sleep(0.2)
-                        #stop command when we are done working
-                        ser.write('\xAD') #stop
-                        GPIO.cleanup()
-                        ser.close()
-                        break 
+                        # #safe mode then stop
+                        # print("exit")
+                        # time.sleep(0.2)
+                        # ser.write('\x83')#safe mode
+                        # time.sleep(0.2)
+                        # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        # time.sleep(0.2)
+                        # #stop command when we are done working
+                        # ser.write('\xAD') #stop
+                        # GPIO.cleanup()
+                        # ser.close()
+                        # break 
 
                     turn_CW = False #we know to turn CCW now
                     #align after turn so that turns are ~crisp~
@@ -384,24 +405,36 @@ try:
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
-                    if(endTime - startTime > 4):
+                    if(endTime - startTime > 3.9):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write('\x92\x00\x00\x00\x00')
                         moveToCorner = True #done mowing, next time we mow need to find corner
+                        #transition back to wandering and polling
+                        modeFlag = 0
+                        turn_CW = True #restored to original value
+                        wander = True #go back to wandering
+                        #turn 180 degrees ish, then stop
+                        ser.write('\x92\xFF\x71\x00\x00') #move right wheels backwards
+                        s = time.time()
+                        e = time.time()
+                        while(e - s < 2):
+                            e = time.time()
+                        ser.write('\x92\x00\x00\x00\x00')
+                        continue
 
-                        #safe mode then stop
-                        print("exit")
-                        time.sleep(0.2)
-                        ser.write('\x83')#safe mode
-                        time.sleep(0.2)
-                        ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        time.sleep(0.2)
-                        #stop command when we are done working
-                        ser.write('\xAD') #stop
-                        GPIO.cleanup()
-                        ser.close()
-                        break 
+                        # #safe mode then stop
+                        # print("exit")
+                        # time.sleep(0.2)
+                        # ser.write('\x83')#safe mode
+                        # time.sleep(0.2)
+                        # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+                        # time.sleep(0.2)
+                        # #stop command when we are done working
+                        # ser.write('\xAD') #stop
+                        # GPIO.cleanup()
+                        # ser.close()
+                        # break 
 
                     turn_CW = True
                     #align after turn so that turns are ~crisp~
@@ -410,9 +443,12 @@ try:
 
       
 except KeyboardInterrupt:
+    print("Keyboard Interrupt: exiting")
     GPIO.cleanup() # clean up GPIO on CTRL+C exit
     #safe mode then stop
     ser.write(SAFEMODE)
+    time.sleep(0.2)
+    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
     time.sleep(0.2)
     #stop command when we are done working
     ser.write(STOP)
