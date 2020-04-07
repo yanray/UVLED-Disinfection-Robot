@@ -217,10 +217,12 @@ try:
             #if we need to return to wandering/cleaning mode
             if(wander == True):
                 toCleanMode()
+                continue
             #use front sensor to detect surface
             frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
             if(frontUnder):
                 print("Object detected by front ultrasound")
+                print("About to move and adjust robotic arm")
                 modeFlag = 1
                 ser.write(SAFEMODE)
                 time.sleep(0.2)
@@ -372,7 +374,7 @@ try:
                         ser.write('\x92\x00\x00\xFF\x71') #move left wheels backwards
                         s = time.time()
                         e = time.time()
-                        while(e - s < 2):
+                        while(e - s < 2.5):
                             e = time.time()
                         ser.write(STOPMOVING)                        
                         continue
@@ -422,7 +424,7 @@ try:
                         ser.write('\x92\xFF\x71\x00\x00') #move right wheels backwards
                         s = time.time()
                         e = time.time()
-                        while(e - s < 2):
+                        while(e - s < 2.5):
                             e = time.time()
                         ser.write(STOPMOVING)
                         continue
