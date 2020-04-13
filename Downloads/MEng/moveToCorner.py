@@ -72,6 +72,14 @@ def GPIO27_callback(channel):
     print ("Button 27 pressed...")
     global sysRunning_flag
     sysRunning_flag = False
+    #safe mode then stop
+    ser.write(SAFEMODE)
+    time.sleep(0.2)
+    ser.write(STOPMOVING) #wheel speed of 0
+    time.sleep(0.2)
+    #stop command when we are done working
+    ser.write(STOP)
+    ser.close()
     print("System shut down")
 
 # GPIO initial setup 
