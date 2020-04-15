@@ -4,9 +4,21 @@ import time
 import RPi.GPIO as GPIO
 from threading import Timer
 
-#setting up serial connection to Raspberry Pi
+#setting up serial connection to Raspberry Pi for the Roomba
 ser = serial.Serial(port = '/dev/ttyUSB0',baudrate=115200)
 ser.flushOutput()
+
+"""
+----------------------
+#serial arm, change the port field
+serArm = serial.Serial(port='',
+                  baudrate=9600,
+                  parity=serial.PARITY_NONE,
+                  stopbits=serial.STOPBITS_ONE,
+                  bytesize=serial.EIGHTBITS,
+                  timeout=1)
+---------------------
+"""
 
 #flags for Roomba running
 sysRunning_flag = True #general flag for if the overall roomba software is still running
@@ -23,6 +35,14 @@ leftEchoPin = 6
 rightTrigPin = 19
 rightEchoPin = 26
 
+"""
+----------------------
+#ultrasound pins for the robot arm
+armTrigPin = 
+armEchoPin= 
+---------------------
+"""
+
 threshold = 25 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
 
 #used for Roomba find table corner 
@@ -35,6 +55,15 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 global moveToCorner #flag for moving to table corner. Need to move to corner whenever a new surface is encountered
 moveToCorner = True
 turn_CW = True      # turn clockwise
+
+"""
+----------------------
+#detects if robot arm is under the table
+global arm_under_table
+arm_under_table = False
+---------------------
+"""
+
 
 #we don't use these two variables. From older previous code. Can potentially get rid of this
 clean = False
@@ -65,6 +94,13 @@ ser.write(CLEANMODE) #clean mode
 print("Wandering")
 time.sleep(0.1)
 
+"""
+---------------------
+#initiate arm in the reset position. Can turn this into a method tbh
+serArm.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset
+---------------------
+"""
+
 
 # safe button to quit the system 
 def GPIO27_callback(channel):
@@ -80,6 +116,15 @@ def GPIO27_callback(channel):
     #stop command when we are done working
     ser.write(STOP)
     ser.close()
+    """
+    ------------------
+    #returns robot arm to initial position i.e. reset
+    serArm.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset\
+    serArm.close()
+    ------------------
+    """
+    #do we need this?
+    #GPIO.cleanup()
     print("System shut down")
 
 # GPIO initial setup 
@@ -88,7 +133,7 @@ GPIO.setmode(GPIO.BCM)   #set up GPIO pins
 # quit button
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-## GPIO setup for two ultrasound's pins
+## GPIO setup for ultrasound's pins
 GPIO.setup(frontTrigPin, GPIO.OUT, initial = GPIO.LOW)
 GPIO.setup(frontEchoPin, GPIO.IN)
 
@@ -97,9 +142,50 @@ GPIO.setup(leftEchoPin, GPIO.IN)
 
 GPIO.setup(rightTrigPin, GPIO.OUT, initial = GPIO.LOW)
 GPIO.setup(rightEchoPin, GPIO.IN)
+"""
+------------------
+#arm ultrasound
+GPIO.setup(armTrigPin, GPIO.OUT, initial = GPIO.LOW)
+GPIO.setup(armEchoPin, GPIO.IN)
+------------------
+"""
 
 ## add callback event
 GPIO.add_event_detect(27, GPIO.FALLING, callback=GPIO27_callback, bouncetime=300)
+
+"""
+-------------
+#we may not need this method. This is just an idea
+#returns arm to intial position. Resets the arm.
+def resetArm(serArm):
+    serArm.write('\x55\x55\x05\x06\x00\x01\x00')
+-------------
+"""
+
+
+"""
+-------------
+#Once arm is under table, adjust arm to correct height
+def adjustArm(serArm,armTrigPin,armEchoPin):
+    dist = ultrasound(armTrigPin, armEchoPin)
+    if(arm_under_table):
+        serArm.write('\x55\x55\x05\x06\x09\x01\x00')
+        time.sleep(2)
+        if(dist > 5 and dist < 10):
+            print("in2")
+            serArm.write('\x55\x55\x05\x06\x05\x01\x00')
+            #serArm.write('\x55\x55\x05\x06\x05\x01\x00')#Action group 1 is for disinfection of the table 
+            time.sleep(2) #Action is set for 18*1000ms therefore delay 19s
+        elif(dist > 10 and dist < 20):
+            serArm.write('\x55\x55\x05\x06\x06\x01\x00')
+            #serArm.write('\x55\x55\x05\x06\x09\x01\x00')
+            #serArm.write('\x55\x55\x05\x06\x04\x01\x00')#Action group 4 is for disinfection of the table 
+            time.sleep(2) #Action is set for 18*1000ms therefore delay 19s
+    else:
+        serArm.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset
+        time.sleep(2)#Action for 1000ms*1 , therefore delay for 1s
+-------------
+"""
 
 #changes Roomba into clean mode aka wandering mode
 def toCleanMode():
@@ -239,6 +325,24 @@ try:
         #moving robot arm. 
         #TODO: POPULATE WITH CODE
         elif modeFlag == 1:
+            """
+            ------------------------------
+            #idea
+            #1) previous mode detects table with front sensor
+            #2) actually wait it depends on the location of where we put the robot arm ultrasound
+            #2b) where do we place robot arm ultrasound?
+
+                            FRONT
+
+                            arm?
+
+
+            LEFT             arm?                RIGHT
+
+
+                            arm?
+            ------------------------------
+            """
             modeFlag = 2
         #traversing underneath the surface
         else:
@@ -458,7 +562,6 @@ try:
       
 except KeyboardInterrupt:
     print("Keyboard Interrupt: exiting")
-    GPIO.cleanup() # clean up GPIO on CTRL+C exit
     #safe mode then stop
     ser.write(SAFEMODE)
     time.sleep(0.2)
@@ -467,6 +570,14 @@ except KeyboardInterrupt:
     #stop command when we are done working
     ser.write(STOP)
     ser.close()
+    """
+    ------------------
+    #returns robot arm to initial position i.e. reset
+    serArm.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset\
+    serArm.close()
+    ------------------
+    """
+    GPIO.cleanup() # clean up GPIO on CTRL+C exit
     
 
 
