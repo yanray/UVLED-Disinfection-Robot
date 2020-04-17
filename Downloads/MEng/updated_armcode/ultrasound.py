@@ -6,11 +6,11 @@ sysRunning_flag = True
 global under_the_table
 
 
-under_the_table = True
+under_the_table = True #under_the_table from the ultrasound team to check wheteher we are under the table or not 
 trigPin = 20
 echoPin = 21
 
-def checklist():
+def checklist(): #Calculating distance 
     GPIO.output(trigPin, GPIO.HIGH)
     time.sleep(0.00015)
     GPIO.output(trigPin, GPIO.LOW)
@@ -66,12 +66,13 @@ try:
            print("in1")
            ser.write('\x55\x55\x05\x06\x09\x01\x00')
            time.sleep(2)
-           if(dist > 5 and dist < 10):
-                print("in2")
+           if(dist > 0 and dist < 10):
+                print("in5_10")
                 ser.write('\x55\x55\x05\x06\x05\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x05\x01\x00')#Action group 1 is for disinfection of the table 
                 time.sleep(2) #Action is set for 18*1000ms therefore delay 19s
            elif(dist > 10 and dist < 20):
+                print("in10_20")
                 ser.write('\x55\x55\x05\x06\x06\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x09\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x04\x01\x00')#Action group 4 is for disinfection of the table 

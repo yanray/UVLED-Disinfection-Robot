@@ -285,7 +285,7 @@ def mow(firstTimeMow):
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-    ser.write('\x92\x00\x3F\x00\x3F') #move forward with speed 63 out of 255
+    ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -486,7 +486,7 @@ try:
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
 
-                    if(endTime - startTime > 3.9):
+                    if(endTime - startTime > 8.9):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -543,7 +543,7 @@ try:
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
-                    if(endTime - startTime > 3.9):
+                    if(endTime - startTime > 8.9):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
