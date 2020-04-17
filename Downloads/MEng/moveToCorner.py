@@ -1,3 +1,29 @@
+"""
+This is the UV Robot MEng project. The goal of this project is to create a robot that can autonomously
+disinfect hard to reach surfaces such as the underside of hospital beds by mounting a UV light and ultrasound
+sensors to a Roomba. Applications of this include reducing the amount of lingering bacteria found in 
+hospital rooms.
+
+At a high level, we have 3 ultrasound sensors and a UV light attached to a robot arm mounted on a Roomba.
+The 3 ultrasound sensors are used for navigation, the detection of surfaces, and for gauging how far
+the UV light on the robot arm needs to move to adjust to the surface height. The robot arm is used
+to move the UV light close to the surface to increase the intensity of the UV rays. 
+
+The Roomba first wanders around the room; this is done by taking advantage of its built-in "Clean Mode".
+While the Roomba wanders, it is constantly using the front ultrasound sensor to see if there is any object
+within a certain threshold distance. Once an object such as a table is detected, the Roomba moves itself
+to the bottom left corner of the table using its ultrasound sensors.
+
+The robot proceeds to navigate the underside of the table using a "lawn mowing algorithm". This just means
+that the robot moves forward until the end of the table width, turns 180, moves forward until the end of the table,
+and repeatedly moves up and down the table until the entire table has been traversed. While traversing
+the table, the UV light is turned on while the robot arm holds it close to the table surface.
+
+When the surface is successfully disinfected, the Roomba leaves the table and resumes wandering until another surface
+is detected.
+"""
+
+
 #import packages
 import serial
 import time
@@ -10,7 +36,7 @@ ser.flushOutput()
 
 """
 ----------------------
-#serial arm, change the port field
+#setting up serial connection to Raspberry Pi for the robot arm
 serArm = serial.Serial(port='',
                   baudrate=9600,
                   parity=serial.PARITY_NONE,
@@ -22,7 +48,7 @@ serArm = serial.Serial(port='',
 
 #flags for Roomba running
 sysRunning_flag = True #general flag for if the overall roomba software is still running
-modeFlag = 0 #mode 0: wander and poll ultrasound. Mode 1: set up/ adjust arm. Mode 2: traverse table
+modeFlag = 0 #mode 0: wander and poll ultrasound. Mode 2: traverse table and clean
 wander = False #True = Roomba is not wandering but should be
 
 # pin for ultrasound // trigPin, echoPin
@@ -35,15 +61,8 @@ leftEchoPin = 6
 rightTrigPin = 19
 rightEchoPin = 26
 
-"""
-----------------------
-#ultrasound pins for the robot arm
-armTrigPin = 
-armEchoPin= 
----------------------
-"""
 
-threshold = 25 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
+threshold = 40 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
 
 #used for Roomba find table corner 
 global ClockWise #do I need to turn CW?
@@ -59,6 +78,7 @@ turn_CW = True      # turn clockwise
 """
 ----------------------
 #detects if robot arm is under the table
+#may not need this. If statement with ultrasound could suffice
 global arm_under_table
 arm_under_table = False
 ---------------------
@@ -166,9 +186,9 @@ def resetArm(serArm):
 """
 -------------
 #Once arm is under table, adjust arm to correct height
-def adjustArm(serArm,armTrigPin,armEchoPin):
+def adjustArm(serArm,armTrigPin,armEchoPin,threshold):
     dist = ultrasound(armTrigPin, armEchoPin)
-    if(arm_under_table):
+    if(dist < threshold): #could just use dist < threshold instead of arm_under_table boolean
         serArm.write('\x55\x55\x05\x06\x09\x01\x00')
         time.sleep(2)
         if(dist > 5 and dist < 10):
@@ -265,7 +285,7 @@ def mow(firstTimeMow):
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-    ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 111 out of 255
+    ser.write('\x92\x00\x3F\x00\x3F') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -275,11 +295,27 @@ def mow(firstTimeMow):
         if((LEFT_UNDER and RIGHT_UNDER==False) or (LEFT_UNDER==False and RIGHT_UNDER)):
                 print("Stop mowing after this!")
                 stop = True
+
+    """
+    ---------------------
+    #Adjust the arm while it is under the table
+    adjustArm(serArm,armTrigPin,armEchoPin,threshold)
+    ---------------------
+    """
+
     # if one of the left or right sensor is under the surface, then keep moving forward.
     while(LEFT_UNDER or RIGHT_UNDER):
         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
         time.sleep(0.01)
         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+
+    """
+    ---------------------
+    #No longer under table. Reset table arm
+    resetArm(serArm)
+    ---------------------
+    """
+
     #returns whether to keep mowing or to stop
     return stop
 
@@ -303,7 +339,7 @@ def ultrasound(trigPin, echoPin):
 
 
 
-#driver code
+#driver code. This is where all the logic and navigation happens
 try:    
     while(sysRunning_flag):
         # ultrasound polling and random walk mode
@@ -316,41 +352,23 @@ try:
             frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
             if(frontUnder):
                 print("Object detected by front ultrasound")
-                print("About to move and adjust robotic arm")
-                modeFlag = 1
+                modeFlag = 2
                 ser.write(SAFEMODE)
                 time.sleep(0.2)
-                #code to move forward. May need to change this to stop and then move forward in mode 1
+                #code to move forward. 
                 ser.write('\x92\x00\x6F\x00\x6F')
-        #moving robot arm. 
-        #TODO: POPULATE WITH CODE
-        elif modeFlag == 1:
-            """
-            ------------------------------
-            #idea
-            #1) previous mode detects table with front sensor
-            #2) actually wait it depends on the location of where we put the robot arm ultrasound
-            #2b) where do we place robot arm ultrasound?
-
-                            FRONT
-
-                            arm?
-
-
-            LEFT             arm?                RIGHT
-
-
-                            arm?
-            ------------------------------
-            """
-            modeFlag = 2
+        #Don't need the commented out code
+        # #moving robot arm. 
+        # elif modeFlag == 1:
+        #     modeFlag = 2
         #traversing underneath the surface
         else:
             LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the left/right sensors are under the table
-                #first time through, need to move to corner
+                #first time detecting surface. 
+                #Move to the corner of the table
                 if(moveToCorner):
                     print("Moving to table corner")
                     ser.write(START) #start
@@ -363,13 +381,14 @@ try:
                     #Robot has stopped moving and will now align with surface
                     align()
                     ser.write(STOPMOVING) #stop wheels moving
-                    #print("wait 0.2 sec")
                     time.sleep(0.2)
 
 
-                    #finished align, now rotate left. Front of robot is facing table corner 
+                    #Finished align, now rotate left. 
+                    #Front of robot is facing bottom left table corner once this finishes
                     ser.write('\x92\x00\x6F\xFF\x91')
-                    #countdown on when to stop. Stop when ultrasound doesn't detect table
+                    #Countdown on when to stop turning towards bottom left table corner direction. 
+                    #Stop when ultrasound doesn't detect table
                     print("In counter clockwise turn.")
                     while(C_ClockWise):
                         distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
@@ -380,8 +399,8 @@ try:
                     C_ClockWise = True #reset this flag for if we find another surface to traverse later
                     
                     
-
-                    #move forward until we don't detect a table. This moves the robot to the table corner
+                    #This moves the robot to the table corner
+                    #Facing bottom left table corner. Move forward to the bottom left table corner.  
                     ser.write(STOPMOVING)
                     time.sleep(0.2)
                     print("Moving forward")
@@ -389,13 +408,12 @@ try:
                     ser.write('\x92\x00\x6F\x00\x6F')
                     #countdown to move forward. Keep moving forward until no table is detected
                     while(RIGHT_UNDER):
-                        #print(RIGHT_UNDER)
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.1)
                     ser.write(STOPMOVING)
                     time.sleep(0.2)
 
-                    #we found that sometimes the roomba overshoots so this moves backward a little bit
+                    #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
                     print("Moving backwards")
                     ser.write('\x92\xFF\x91\xFF\x91')
@@ -403,7 +421,8 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     ser.write(STOPMOVING)
 
-                    #finished moving to the table edge, now rotate right to get in the correct position for mowing
+                    #Finished moving to the table edge, but we are facing away from the table. 
+                    #Rotate right to face forward and get in the correct position for mowing
                     ser.write('\x92\xFF\x91\x00\x6F')
                     time.sleep(0.2)
                     ClockWise = True
@@ -428,32 +447,26 @@ try:
 
 
                 #ELSE we do NOT need to move to the corner 
-                print("Not the first time in lawn mowing algorithm")
-                #stop condition comes from calling the mow method. Details specified in mow() method
-                stopCondition = mow(False) #False means not the first time mowing
-                if(stopCondition==True):
-                    print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
-                    ser.write(STOPMOVING)
-                    moveToCorner = True #done mowing, next time we mow need to find corner
-                    #transition back to wandering and polling
-                    modeFlag = 0
-                    turn_CW = True #restored to original value
-                    wander = True #go back to wandering
-                    continue
+                else:
+                    print("Not the first time in lawn mowing algorithm")
+                    #stop condition comes from calling the mow method. Details specified in mow() method
+                    stopCondition = mow(False) #False means not the first time mowing
+                    if(stopCondition==True):
+                        print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
+                        ser.write(STOPMOVING)
+                        moveToCorner = True #done mowing, next time we mow need to find corner
+                        #transition back to wandering and polling
+                        modeFlag = 0
+                        turn_CW = True #restored to original value
+                        wander = True #go back to wandering
+                        """
+                        -------------------------
+                        #reset arm after stop condition
+                        resetArm(serArm)
+                        -------------------------
+                        """
+                        continue
 
-
-                    # #safe mode then stop
-                    # print("exit")
-                    # time.sleep(0.2)
-                    # ser.write('\x83')#safe mode
-                    # time.sleep(0.2)
-                    # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                    # time.sleep(0.2)
-                    # #stop command when we are done working
-                    # ser.write('\xAD') #stop
-                    # GPIO.cleanup()
-                    # ser.close()
-                    # break 
 
 
                 #now to handle turning
@@ -488,9 +501,16 @@ try:
                         e = time.time()
                         while(e - s < 2.5):
                             e = time.time()
-                        ser.write(STOPMOVING)                        
+                        ser.write(STOPMOVING)  
+                        """
+                        -------------------------
+                        #reset arm after stop condition
+                        resetArm(serArm)
+                        -------------------------
+                        """                      
                         continue
 
+                        #ignore comments below. Used when Patrick and Beau were testing
                         # #safe mode then stop
                         # print("exit")
                         # time.sleep(0.2)
@@ -539,6 +559,12 @@ try:
                         while(e - s < 2.5):
                             e = time.time()
                         ser.write(STOPMOVING)
+                        """
+                        -------------------------
+                        #reset arm after stop condition
+                        resetArm(serArm)
+                        -------------------------
+                        """
                         continue
 
                         # #safe mode then stop
