@@ -337,6 +337,24 @@ def ultrasound(trigPin, echoPin):
 
 
 
+"""
+----------
+TEMPORARY CODE FOR BREAKING CODE INTO SECTIONS
+-----------
+"""
+def pause(ser):
+    #safe mode then stop
+    print("exit")
+    time.sleep(0.2)
+    ser.write('\x83')#safe mode
+    time.sleep(0.2)
+    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+    time.sleep(0.2)
+    #stop command when we are done working
+    ser.write('\xAD') #stop
+    GPIO.cleanup()
+    ser.close()
+
 
 
 #driver code. This is where all the logic and navigation happens
@@ -383,6 +401,15 @@ try:
                     ser.write(STOPMOVING) #stop wheels moving
                     time.sleep(0.2)
 
+                    #this is for before the roomba starts moving to the corner, but after align
+                    print("this is for before the roomba starts moving to the corner, but after align")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
 
                     #Finished align, now rotate left. 
                     #Front of robot is facing bottom left table corner once this finishes
@@ -397,6 +424,16 @@ try:
                             print("Done with counter clockwise")
                             C_ClockWise = False
                     C_ClockWise = True #reset this flag for if we find another surface to traverse later
+
+                    #Finished rotating left. Facing bottom left table corner
+                    print("Finished rotating left. Facing bottom left table corner")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
                     
                     
                     #This moves the robot to the table corner
@@ -421,6 +458,17 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     ser.write(STOPMOVING)
 
+                    #Moved to table corner and did the backward adjust.
+                    print("Moved to table corner and did the backward adjust.")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
+
+
                     #Finished moving to the table edge, but we are facing away from the table. 
                     #Rotate right to face forward and get in the correct position for mowing
                     ser.write('\x92\xFF\x91\x00\x6F')
@@ -439,10 +487,33 @@ try:
                     print("Finished moving to the corner")
                     #set move to corner to false after initial run is done
                     moveToCorner = False
+
+                    #move to corner is now complete
+                    print("move to corner is now complete")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
+
+
+
                     #now mow
                     print("Entering lawn mowing algorithm for the first time")
                     #True means it is our first time mowing
                     mow(True) #mow just moves forward until no sensors are under the table
+
+                    #Done with the first lawn mow
+                    print("Done with the first lawn mow")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
 
 
 
@@ -451,6 +522,19 @@ try:
                     print("Not the first time in lawn mowing algorithm")
                     #stop condition comes from calling the mow method. Details specified in mow() method
                     stopCondition = mow(False) #False means not the first time mowing
+                    print("")
+
+                    #Done with not first lawn mowing
+                    print("Done with not first lawn mowing")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
+
+
                     if(stopCondition==True):
                         print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -481,6 +565,17 @@ try:
                     while(LEFT_UNDER==False):
                         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     endTime = time.time()
+
+                    #Done with CW turn
+                    print("Done with clockwise turn")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
+
                     #check if the elapsed time is too long.
                     #this implies we need to do a 180 turn and then wander
                     #the time that is considered "too long" can be modified
@@ -540,6 +635,16 @@ try:
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     endTime = time.time()
+
+                    #Done with CW turn
+                    print("Done with counter clockwise turn")
+                    """
+                    ------------------
+                    ADDING A PAUSE AND BREAK
+                    ------------------
+                    """
+                    pause(ser)
+                    break
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
