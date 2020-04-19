@@ -4,8 +4,8 @@ import RPi.GPIO as GPIO
 
 sysRunning_flag = True
 
-trigPin = 5
-echoPin = 6
+trigPin = 19
+echoPin = 26
 
 def checklist():
     GPIO.output(trigPin, GPIO.HIGH)

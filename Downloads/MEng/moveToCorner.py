@@ -62,7 +62,7 @@ rightTrigPin = 19
 rightEchoPin = 26
 
 
-threshold = 40 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
+threshold = 50 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
 
 #used for Roomba find table corner 
 global ClockWise #do I need to turn CW?
@@ -407,9 +407,13 @@ try:
                     ------------------
                     ADDING A PAUSE AND BREAK
                     ------------------
+                    did not work at the first time
+                    hold the table a little bit away from the Rommba
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
+
+
 
                     #Finished align, now rotate left. 
                     #Front of robot is facing bottom left table corner once this finishes
@@ -432,8 +436,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
                     
                     
                     #This moves the robot to the table corner
@@ -465,8 +469,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
 
                     #Finished moving to the table edge, but we are facing away from the table. 
@@ -495,16 +499,19 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
 
 
                     #now mow
                     print("Entering lawn mowing algorithm for the first time")
                     #True means it is our first time mowing
+                    a= ultrasound(19,26)
+                    print(a)
                     mow(True) #mow just moves forward until no sensors are under the table
-
+                    a= ultrasound(19,26)
+                    print(a)
                     #Done with the first lawn mow
                     print("Done with the first lawn mow")
                     """
