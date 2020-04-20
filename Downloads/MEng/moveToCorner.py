@@ -90,8 +90,8 @@ clean = False
 mowing = False
 
 # handy constants for various modes of Roomba operation and some wheel speeds. All in hex 
-leftSpeed = '\x00\x8f'      #PWM mode speed control of Roomba wheels 
-rightSpeed = '\x00\x8f'
+leftSpeed = '\x00\x3f'      #PWM mode speed control of Roomba wheels 
+rightSpeed = '\x00\x3f'
 
 START = '\x80'
 STOP = '\xAD'               #stop command
@@ -112,7 +112,7 @@ print("Started")
 time.sleep(0.2)
 ser.write(CLEANMODE) #clean mode
 print("Wandering")
-time.sleep(0.1)
+
 
 """
 ---------------------
@@ -211,12 +211,12 @@ def adjustArm(serArm,armTrigPin,armEchoPin,threshold):
 def toCleanMode():
     global wander
     print("Going to clean mode")
-    time.sleep(0.2)
+    time.sleep(0.1)
     ser.write(START) #start
 
     time.sleep(0.2)
     ser.write(CLEANMODE) #clean mode
-    time.sleep(0.2)
+    time.sleep(0.1)
     wander = False
 
 #checks if an ultrasound sensor is under a surface, specified by threshold height. 
@@ -225,6 +225,7 @@ def checkIfUnder(trigPin,echoPin, threshold):
     count = 0
     for i in range(3):
         dist = ultrasound(trigPin,echoPin)
+        time.sleep(0.01)
         if dist < threshold:
             count = count + 1
     
@@ -244,13 +245,14 @@ def align():
     global sysRunning_flag
     print("In align")
     #sets wheels moving forward
-    leftSpeed = '\x00\x8f'
-    rightSpeed = '\x00\x8f'
+    leftSpeed = '\x00\x3f'
+    rightSpeed = '\x00\x3f'
     ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
     #check left and right sensors to see if they are under a surface
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+    time.sleep(0.01)
     under = LEFT_UNDER and RIGHT_UNDER
     while (not under):
 
@@ -259,6 +261,7 @@ def align():
         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
         time.sleep(0.01)
         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+        time.sleep(0.01)
         if(LEFT_UNDER):
             #print("Left sensor under, stop left wheels")
             leftSpeed = '\x00\x00'
@@ -285,7 +288,8 @@ def mow(firstTimeMow):
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-    ser.write('\x92\x00\x6F\x00\x6F') #move forward with speed 63 out of 255
+    time.sleep(0.01)
+    ser.write('\x92\x00\x3F\x00\x3F') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -308,6 +312,8 @@ def mow(firstTimeMow):
         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
         time.sleep(0.01)
         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+        time.sleep(0.01)
+
 
     """
     ---------------------
@@ -368,6 +374,7 @@ try:
                 continue
             #use front sensor to detect surface
             frontUnder = checkIfUnder(frontTrigPin,frontEchoPin,threshold)
+            time.sleep(0.01)
             if(frontUnder):
                 print("Object detected by front ultrasound")
                 modeFlag = 2
@@ -384,6 +391,7 @@ try:
             LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
             time.sleep(0.01)
             RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+            time.sleep(0.01)
             if(LEFT_UNDER or RIGHT_UNDER): #if one or both of the left/right sensors are under the table
                 #first time detecting surface. 
                 #Move to the corner of the table
@@ -399,7 +407,7 @@ try:
                     #Robot has stopped moving and will now align with surface
                     align()
                     ser.write(STOPMOVING) #stop wheels moving
-                    time.sleep(0.2)
+                    time.sleep(0.5)
 
                     #this is for before the roomba starts moving to the corner, but after align
                     print("this is for before the roomba starts moving to the corner, but after align")
@@ -417,12 +425,13 @@ try:
 
                     #Finished align, now rotate left. 
                     #Front of robot is facing bottom left table corner once this finishes
-                    ser.write('\x92\x00\x6F\xFF\x91')
+                    ser.write('\x92\x00\x3F\xFF\xC1')
                     #Countdown on when to stop turning towards bottom left table corner direction. 
                     #Stop when ultrasound doesn't detect table
                     print("In counter clockwise turn.")
                     while(C_ClockWise):
                         distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
+                        time.sleep(0.01)
                         #stop turning once front sensor is out from under surface
                         if(distcheck == False):
                             print("Done with counter clockwise")
@@ -443,24 +452,26 @@ try:
                     #This moves the robot to the table corner
                     #Facing bottom left table corner. Move forward to the bottom left table corner.  
                     ser.write(STOPMOVING)
-                    time.sleep(0.2)
+                    time.sleep(0.5)
                     print("Moving forward")
                     #code to move forward
-                    ser.write('\x92\x00\x6F\x00\x6F')
+                    ser.write('\x92\x00\x3F\x00\x3F')
                     #countdown to move forward. Keep moving forward until no table is detected
                     while(RIGHT_UNDER):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
-                        time.sleep(0.1)
+                        time.sleep(0.01)
                     ser.write(STOPMOVING)
-                    time.sleep(0.2)
+                    time.sleep(0.5)
 
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
                     print("Moving backwards")
-                    ser.write('\x92\xFF\x91\xFF\x91')
+                    ser.write('\x92\xFF\xC1\xFF\xC1')
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                        time.sleep(0.01)
                     ser.write(STOPMOVING)
+                    time.sleep(0.5)
 
                     #Moved to table corner and did the backward adjust.
                     print("Moved to table corner and did the backward adjust.")
@@ -475,13 +486,13 @@ try:
 
                     #Finished moving to the table edge, but we are facing away from the table. 
                     #Rotate right to face forward and get in the correct position for mowing
-                    ser.write('\x92\xFF\x91\x00\x6F')
-                    time.sleep(0.2)
+                    ser.write('\x92\xFF\xC1\x00\x3F')
                     ClockWise = True
                     print("Moving clockwise")
                     #countdown on when to stop turning clockwise
                     while(ClockWise):
                         distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
+                        time.sleep(0.01)
                         #print("dist is: "+str(dist))
                         #if dist < 25
                         if(distcheck):
@@ -564,13 +575,15 @@ try:
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('In clockwise turn')
-                    ser.write('\x92\x00\x00\x00\x8F') #move left wheels not right wheels
+                    ser.write('\x92\x00\x00\x00\x3F') #move left wheels not right wheels
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                    time.sleep(0.01)
                     #keep rotating left wheels while left sensor is not yet under table
                     startTime = time.time() #timer to check if a turn is taking too long
                     while(LEFT_UNDER==False):
                         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
+                        time.sleep(0.01)
                     endTime = time.time()
 
                     #Done with CW turn
@@ -588,7 +601,7 @@ try:
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
 
-                    if(endTime - startTime > 8.9):
+                    if(endTime - startTime > 18.9):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -634,13 +647,15 @@ try:
                 # turn CCW     
                 else:
                     print('In counter clockwise turn')
-                    ser.write('\x92\x00\x8F\x00\x00') #right wheel moves and left doesn't
+                    ser.write('\x92\x00\x3F\x00\x00') #right wheel moves and left doesn't
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    time.sleep(0.01)
                     #keep rotating left wheels while left sensor is not yet under table
                     startTime = time.time()
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                        time.sleep(0.01)
                     endTime = time.time()
 
                     #Done with CW turn
@@ -655,7 +670,7 @@ try:
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
-                    if(endTime - startTime > 8.9):
+                    if(endTime - startTime > 18.9):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
