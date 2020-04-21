@@ -710,7 +710,8 @@ try:
                     turn_CW = True
                     #align after turn so that turns are ~crisp~
                     align()     
-
+            else:
+                ser.write('\x92\x00\x3F\x00\x3F')
 
       
 except KeyboardInterrupt:
