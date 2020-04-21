@@ -711,7 +711,7 @@ try:
                     #align after turn so that turns are ~crisp~
                     align()     
             else:
-                ser.write('\x92\x00\x5F\x00\x5F')
+                ser.write('\x92\x00\x0F\x00\x0F')
 
       
 except KeyboardInterrupt:
