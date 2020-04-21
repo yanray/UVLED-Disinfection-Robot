@@ -289,7 +289,7 @@ def mow(firstTimeMow):
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
     time.sleep(0.01)
-    ser.write('\x92\x00\x3F\x00\x3F') #move forward with speed 63 out of 255
+    ser.write('\x92\x00\x5F\x00\x5F') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -425,7 +425,7 @@ try:
 
                     #Finished align, now rotate left. 
                     #Front of robot is facing bottom left table corner once this finishes
-                    ser.write('\x92\x00\x3F\xFF\xC1')
+                    ser.write('\x92\x00\x5F\xFF\xA1')
                     #Countdown on when to stop turning towards bottom left table corner direction. 
                     #Stop when ultrasound doesn't detect table
                     print("In counter clockwise turn.")
@@ -455,7 +455,7 @@ try:
                     time.sleep(0.1)
                     print("Moving forward")
                     #code to move forward
-                    ser.write('\x92\x00\x3F\x00\x3F')
+                    ser.write('\x92\x00\x5F\x00\x5F')
                     #countdown to move forward. Keep moving forward until no table is detected
                     while(RIGHT_UNDER):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -466,7 +466,7 @@ try:
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
                     print("Moving backwards")
-                    ser.write('\x92\xFF\xC1\xFF\xC1')
+                    ser.write('\x92\xFF\xA1\xFF\xA1')
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
@@ -486,7 +486,7 @@ try:
 
                     #Finished moving to the table edge, but we are facing away from the table. 
                     #Rotate right to face forward and get in the correct position for mowing
-                    ser.write('\x92\xFF\xC1\x00\x3F')
+                    ser.write('\x92\xFF\xA1\x00\x5F')
                     ClockWise = True
                     print("Moving clockwise")
                     #countdown on when to stop turning clockwise
@@ -575,7 +575,7 @@ try:
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('In clockwise turn')
-                    ser.write('\x92\x00\x00\x00\x3F') #move left wheels not right wheels
+                    ser.write('\x92\x00\x00\x00\x5F') #move left wheels not right wheels
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     time.sleep(0.01)
@@ -647,7 +647,7 @@ try:
                 # turn CCW     
                 else:
                     print('In counter clockwise turn')
-                    ser.write('\x92\x00\x3F\x00\x00') #right wheel moves and left doesn't
+                    ser.write('\x92\x00\x5F\x00\x00') #right wheel moves and left doesn't
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     time.sleep(0.01)
@@ -711,7 +711,7 @@ try:
                     #align after turn so that turns are ~crisp~
                     align()     
             else:
-                ser.write('\x92\x00\x3F\x00\x3F')
+                ser.write('\x92\x00\x5F\x00\x5F')
 
       
 except KeyboardInterrupt:
