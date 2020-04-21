@@ -90,8 +90,8 @@ clean = False
 mowing = False
 
 # handy constants for various modes of Roomba operation and some wheel speeds. All in hex 
-leftSpeed = '\x00\x3f'      #PWM mode speed control of Roomba wheels 
-rightSpeed = '\x00\x3f'
+leftSpeed = '\x00\x8f'      #PWM mode speed control of Roomba wheels 
+rightSpeed = '\x00\x8f'
 
 START = '\x80'
 STOP = '\xAD'               #stop command
@@ -245,8 +245,8 @@ def align():
     global sysRunning_flag
     print("In align")
     #sets wheels moving forward
-    leftSpeed = '\x00\x3f'
-    rightSpeed = '\x00\x3f'
+    leftSpeed = '\x00\x8f'
+    rightSpeed = '\x00\x8f'
     ser.write(MOTOR_PWM + rightSpeed + leftSpeed)
     #check left and right sensors to see if they are under a surface
     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
@@ -407,7 +407,7 @@ try:
                     #Robot has stopped moving and will now align with surface
                     align()
                     ser.write(STOPMOVING) #stop wheels moving
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
                     #this is for before the roomba starts moving to the corner, but after align
                     print("this is for before the roomba starts moving to the corner, but after align")
@@ -452,7 +452,7 @@ try:
                     #This moves the robot to the table corner
                     #Facing bottom left table corner. Move forward to the bottom left table corner.  
                     ser.write(STOPMOVING)
-                    time.sleep(0.5)
+                    time.sleep(0.1)
                     print("Moving forward")
                     #code to move forward
                     ser.write('\x92\x00\x3F\x00\x3F')
@@ -461,7 +461,7 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
                     ser.write(STOPMOVING)
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
@@ -471,7 +471,7 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
                     ser.write(STOPMOVING)
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
                     #Moved to table corner and did the backward adjust.
                     print("Moved to table corner and did the backward adjust.")
