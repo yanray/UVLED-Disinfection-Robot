@@ -445,8 +445,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    #pause(ser)
-                    #break
+                    pause(ser)
+                    break
                     
                     
                     #This moves the robot to the table corner
