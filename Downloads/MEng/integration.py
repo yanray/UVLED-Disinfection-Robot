@@ -39,7 +39,7 @@ ser.flushOutput()
 ---------------------
 """
 #setting up serial connection to Raspberry Pi for the robot arm
-serArm = serial.Serial(port='ttyS0',
+serArm = serial.Serial(port='/dev/ttyS0',
                   baudrate=9600,
                   parity=serial.PARITY_NONE,
                   stopbits=serial.STOPBITS_ONE,
@@ -374,23 +374,22 @@ try:
     	print("Testing arm. First stop roomba movement")
     	ser.write('\x83')
     	time.sleep(0.2)
-	    ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-	    time.sleep(0.2)
-	    #stop command when we are done working
-	    ser.write('\xAD') #stop
-
-	    print("Reset arm in test")
-	    resetArm(serArm)
-	    time.sleep(2)
-	    print("Raise arm in test")
-	    raiseArm(serArm)
-	    time.sleep(3)
-	    print("Reset arm in test again")
-	    resetArm(serArm)
-	    time.sleep(2)
-	    print("Shut it down")
-	    #shut it down
-	    GPIO.cleanup()
+	ser.write('\x92\x00\x00\00\00') #wheel speed of 0
+	time.sleep(0.2)
+	#stop command when we are done working
+	ser.write('\xAD') #stop
+	print("Reset arm in test")
+	resetArm(serArm)
+	time.sleep(2)
+	print("Raise arm in test")
+	raiseArm(serArm)
+	time.sleep(3)
+	print("Reset arm in test again")
+	resetArm(serArm)
+	time.sleep(2)
+	print("Shut it down")
+	#shut it down
+	GPIO.cleanup()
     	ser.close()
     	serArm.close()
     	break
