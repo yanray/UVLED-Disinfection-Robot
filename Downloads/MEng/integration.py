@@ -363,7 +363,6 @@ def pause(ser):
     ser.write('\xAD') #stop
     GPIO.cleanup()
     ser.close()
-    serArm.close()
 
 
 
@@ -382,13 +381,16 @@ try:
             if(frontUnder):
                 print("Object detected by front ultrasound")
                 print("Raising arm")
-                raiseArm(serArm)
-                modeFlag = 2
                 ser.write(STOPMOVING)
-                time.sleep(2)
+                raiseArm(serArm)
+                time.sleep(8)
+                modeFlag = 2
+               	
+                print("resetting arm")
                 resetArm(serArm)
                 time.sleep(2)
-                pause()
+                pause(ser)
+                serArm.close()
                 break
                 ser.write(SAFEMODE)
                 time.sleep(0.2)
