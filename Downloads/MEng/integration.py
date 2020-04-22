@@ -363,38 +363,13 @@ def pause(ser):
     ser.write('\xAD') #stop
     GPIO.cleanup()
     ser.close()
+    serArm.close()
 
 
 
 #driver code. This is where all the logic and navigation happens
 try:    
     while(sysRunning_flag):
-    	#for testing the robot arm
-    	#stops roomba from moving
-    	print("Testing arm. First stop roomba movement")
-    	ser.write('\x83')
-    	time.sleep(0.2)
-	ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-	time.sleep(0.2)
-	#stop command when we are done working
-	ser.write('\xAD') #stop
-	print("Reset arm in test")
-	resetArm(serArm)
-	time.sleep(2)
-	print("Raise arm in test")
-	raiseArm(serArm)
-	time.sleep(3)
-	print("Reset arm in test again")
-	resetArm(serArm)
-	time.sleep(2)
-	print("Shut it down")
-	#shut it down
-	GPIO.cleanup()
-    	ser.close()
-    	serArm.close()
-    	break
-
-
         # ultrasound polling and random walk mode
         if (modeFlag == 0):
             #if we need to return to wandering/cleaning mode
@@ -406,7 +381,15 @@ try:
             time.sleep(0.01)
             if(frontUnder):
                 print("Object detected by front ultrasound")
+                print("Raising arm")
+                raiseArm(serArm)
                 modeFlag = 2
+                ser.write(STOPMOVING)
+                time.sleep(2)
+                resetArm(serArm)
+                time.sleep(2)
+                pause()
+                break
                 ser.write(SAFEMODE)
                 time.sleep(0.2)
                 #code to move forward. 
