@@ -381,6 +381,8 @@ try:
             if(frontUnder):
                 print("Object detected by front ultrasound")
                 print("Raising arm")
+                ser.write('\x83')#safe mode
+                time.sleep(0.15)
                 ser.write(STOPMOVING)
                 raiseArm(serArm)
                 time.sleep(8)
