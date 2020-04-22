@@ -445,8 +445,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
                     
                     
                     #This moves the robot to the table corner
@@ -530,8 +530,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
 
 
@@ -549,8 +549,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
 
                     if(stopCondition==True):
@@ -575,7 +575,7 @@ try:
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('In clockwise turn')
-                    ser.write('\x92\x00\x00\x00\x5F') #move left wheels not right wheels
+                    ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     time.sleep(0.01)
@@ -593,8 +593,8 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
                     #check if the elapsed time is too long.
                     #this implies we need to do a 180 turn and then wander
@@ -647,7 +647,7 @@ try:
                 # turn CCW     
                 else:
                     print('In counter clockwise turn')
-                    ser.write('\x92\x00\x5F\x00\x00') #right wheel moves and left doesn't
+                    ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     time.sleep(0.01)
@@ -665,12 +665,12 @@ try:
                     ADDING A PAUSE AND BREAK
                     ------------------
                     """
-                    pause(ser)
-                    break
+                    #pause(ser)
+                    #break
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
-                    if(endTime - startTime > 18.9):
+                    if(endTime - startTime > 8.9):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -711,7 +711,7 @@ try:
                     #align after turn so that turns are ~crisp~
                     align()     
             else:
-                ser.write('\x92\x00\x0F\x00\x0F')
+                ser.write('\x92\x00\x4F\x00\x4F')
 
       
 except KeyboardInterrupt:
