@@ -447,7 +447,6 @@ try:
                     print("In counter clockwise turn.")
                     while(C_ClockWise):
                         distcheck = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
-                        time.sleep(0.01)
                         #stop turning once front sensor is out from under surface
                         if(distcheck == False):
                             print("Done with counter clockwise")
