@@ -423,14 +423,15 @@ try:
                     
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
+                    temp = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     print("Moving backwards")
                     ser.write('\x92\xFF\xA1\xFF\xA1')
-                    while(RIGHT_UNDER==False):
-                        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                    while(temp==True):
+                        temp = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
                     ser.write(STOPMOVING)
                     time.sleep(0.1)
-
+                    
 
                     #Finished align, now rotate left. 
                     #Front of robot is facing bottom left table corner once this finishes
@@ -520,6 +521,11 @@ try:
                     """
                     #pause(ser)
                     #break
+                    #ser.write(STOPMOVING)
+                    #time.sleep(0.2)
+                    #ser.write('\x92\x00\x5F\x00\x5F')
+                    #time.sleep(0.05)
+
 
 
 
@@ -583,7 +589,7 @@ try:
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     print('In clockwise turn')
-                    ser.write('\x92\x00\x00\x00\x6F') #move left wheels not right wheels
+                    ser.write('\x92\x00\x00\x00\x7F') #move left wheels not right wheels
 
                     LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                     time.sleep(0.01)
@@ -655,7 +661,7 @@ try:
                 # turn CCW     
                 else:
                     print('In counter clockwise turn')
-                    ser.write('\x92\x00\x6F\x00\x00') #right wheel moves and left doesn't
+                    ser.write('\x92\x00\x7F\x00\x00') #right wheel moves and left doesn't
 
                     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                     time.sleep(0.01)
