@@ -420,7 +420,16 @@ try:
                     """
                     #pause(ser)
                     #break
-
+                    
+                    #We found that sometimes the Roomba overshoots so this moves backward a little bit
+                    #to account for that. Don't worry this is based off of sensor readings and not timing
+                    print("Moving backwards")
+                    ser.write('\x92\xFF\xA1\xFF\xA1')
+                    while(RIGHT_UNDER==False):
+                        RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
+                        time.sleep(0.01)
+                    ser.write(STOPMOVING)
+                    time.sleep(0.1)
 
 
                     #Finished align, now rotate left. 
