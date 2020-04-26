@@ -74,6 +74,7 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 global moveToCorner #flag for moving to table corner. Need to move to corner whenever a new surface is encountered
 moveToCorner = True
 turn_CW = True      # turn clockwise
+#totalTurns = 0
 
 """
 ----------------------
@@ -382,11 +383,6 @@ try:
                 time.sleep(0.2)
                 #code to move forward. 
                 ser.write('\x92\x00\x6F\x00\x6F')
-        #Don't need the commented out code
-        # #moving robot arm. 
-        # elif modeFlag == 1:
-        #     modeFlag = 2
-        #traversing underneath the surface
         else:
             LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
             time.sleep(0.01)
@@ -410,7 +406,7 @@ try:
                     time.sleep(0.1)
 
                     #this is for before the roomba starts moving to the corner, but after align
-                    print("this is for before the roomba starts moving to the corner, but after align")
+                    #print("this is for before the roomba starts moving to the corner, but after align")
                     """
                     ------------------
                     ADDING A PAUSE AND BREAK
@@ -447,8 +443,16 @@ try:
                             C_ClockWise = False
                     C_ClockWise = True #reset this flag for if we find another surface to traverse later
 
+                    #Roomba can overshoot and turn too much. Adjust the overshoot
+                    ##########################################
+                    #print("adjusting for counter clockwise overshoot")
+                    #ser.write('\x92\xFF\xA1\x00\x5F')
+                    #temp2 = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
+                    #while(temp2==False):
+                    #    temp2 = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
+
                     #Finished rotating left. Facing bottom left table corner
-                    print("Finished rotating left. Facing bottom left table corner")
+                    #print("Finished rotating left. Facing bottom left table corner")
                     """
                     ------------------
                     ADDING A PAUSE AND BREAK
@@ -474,7 +478,7 @@ try:
 
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
-                    print("Moving backwards")
+                    #print("Moving backwards")
                     ser.write('\x92\xFF\xA1\xFF\xA1')
                     while(RIGHT_UNDER==False):
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -483,7 +487,7 @@ try:
                     time.sleep(0.1)
 
                     #Moved to table corner and did the backward adjust.
-                    print("Moved to table corner and did the backward adjust.")
+                    #print("Moved to table corner and did the backward adjust.")
                     """
                     ------------------
                     ADDING A PAUSE AND BREAK
@@ -513,7 +517,7 @@ try:
                     moveToCorner = False
 
                     #move to corner is now complete
-                    print("move to corner is now complete")
+                    #print("move to corner is now complete")
                     """
                     ------------------
                     ADDING A PAUSE AND BREAK
@@ -588,6 +592,18 @@ try:
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
+                    """
+                    if totalTurns > 5:
+                        print("Resuming wandering")
+                        ser.write(STOPMOVING)
+                        moveToCorner = True #done mowing, next time we mow need to find corner
+                        #transition back to wandering and polling
+                        modeFlag = 0
+                        turn_CW = True #restored to original value
+                        wander = True #go back to wandering
+                        totalTurns = 0
+                        continue
+                    """
                     print('In clockwise turn')
                     ser.write('\x92\x00\x00\x00\x7F') #move left wheels not right wheels
 
@@ -599,7 +615,7 @@ try:
                         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                         time.sleep(0.01)
                     endTime = time.time()
-
+                    #totalTurns = totalTurns +1
                     #Done with CW turn
                     print("Done with clockwise turn")
                     """
@@ -660,6 +676,18 @@ try:
 
                 # turn CCW     
                 else:
+                    """
+                    if totalTurns > 5:
+                        print("Resuming wandering")
+                        ser.write(STOPMOVING)
+                        moveToCorner = True #done mowing, next time we mow need to find corner
+                        #transition back to wandering and polling
+                        modeFlag = 0
+                        turn_CW = True #restored to original value
+                        wander = True #go back to wandering
+                        totalTurns = 0
+                        continue
+                    """
                     print('In counter clockwise turn')
                     ser.write('\x92\x00\x7F\x00\x00') #right wheel moves and left doesn't
 
@@ -671,6 +699,7 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
                     endTime = time.time()
+                    #totalTurns = totalTurns + 1
 
                     #Done with CW turn
                     print("Done with counter clockwise turn")
