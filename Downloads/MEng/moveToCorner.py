@@ -113,8 +113,12 @@ print("Started")
 time.sleep(0.2)
 ser.write(CLEANMODE) #clean mode
 print("Wandering")
-
-
+time.sleep(0.2)
+#ser.write(SAFEMODE)
+#time.sleep(0.2)
+#print("forward")
+#ser.write('\x92\x00\x60\x00\x5F')
+#time.sleep(10)
 """
 ---------------------
 #initiate arm in the reset position. Can turn this into a method tbh
@@ -290,7 +294,7 @@ def mow(firstTimeMow):
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
     time.sleep(0.01)
-    ser.write('\x92\x00\x5F\x00\x5F') #move forward with speed 63 out of 255
+    ser.write('\x92\x00\x60\x00\x5F') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -672,6 +676,8 @@ try:
                     turn_CW = False #we know to turn CCW now
                     #align after turn so that turns are ~crisp~
                     align()
+                    ser.write(STOPMOVING)
+                    time.sleep(5)
                  
 
                 # turn CCW     
