@@ -9,10 +9,5 @@ ser.write(SAFEMODE)
 
 #SING A SONG
 ser.write("\x8C\x00\x01\x45\xFF")
-<<<<<<< HEAD
-ser.write("\x8D\x00")`
+ser.write("\x8D\x00")
 ser.close()
-=======
-
-ser.close()
->>>>>>> a92a1ae7cec24c8cf013b1e49d86f55dcd5df333
