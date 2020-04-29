@@ -6,6 +6,7 @@ sysRunning_flag = True
 
 #LESSON: MUST PUT INTO SAFE MODE BEFORE STOP COMMAND 
 ser=serial.Serial(port='/dev/ttyUSB0',baudrate=115200)
+ser.flushOutput()
 
 #----------start in random walk----------
 time.sleep(0.2)
@@ -104,5 +105,7 @@ ser.write('\x92\x00\x00\00\00') #wheel speed of 0
 time.sleep(0.2)
 #stop command when we are done working
 ser.write('\xAD') #stop
+ser.close()
 GPIO.cleanup()
+
 

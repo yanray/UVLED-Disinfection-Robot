@@ -114,11 +114,11 @@ time.sleep(0.2)
 ser.write(CLEANMODE) #clean mode
 print("Wandering")
 time.sleep(0.2)
-#ser.write(SAFEMODE)
-#time.sleep(0.2)
-#print("forward")
-#ser.write('\x92\x00\x60\x00\x5F')
-#time.sleep(10)
+ser.write(SAFEMODE)
+time.sleep(0.2)
+print("forward")
+ser.write('\x92\x00\x60\x00\x5F')
+time.sleep(10)
 """
 ---------------------
 #initiate arm in the reset position. Can turn this into a method tbh
