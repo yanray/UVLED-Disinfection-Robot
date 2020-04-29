@@ -8,5 +8,5 @@ ser.write(SAFEMODE)
 
 #SING A SONG
 ser.write("\x8C\x00\x01\x45\xFF")
-
+ser.write("\x8D\x00")`
 ser.close()
