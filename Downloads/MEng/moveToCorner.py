@@ -635,7 +635,7 @@ try:
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
 
-                    if(endTime - startTime > 18.9):
+                    if(endTime - startTime > 7.35):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -677,7 +677,7 @@ try:
                     #align after turn so that turns are ~crisp~
                     align()
                     ser.write(STOPMOVING)
-                    time.sleep(5)
+                    time.sleep(2)
                  
 
                 # turn CCW     
@@ -719,7 +719,7 @@ try:
 
                     print("Time spent in turn: "+str(endTime-startTime))
                     
-                    if(endTime - startTime > 8.9):
+                    if(endTime - startTime > 7.35):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -758,7 +758,8 @@ try:
 
                     turn_CW = True
                     #align after turn so that turns are ~crisp~
-                    align()     
+                    align()  
+                    time.sleep(2)   
             else:
                 ser.write('\x92\x00\x4F\x00\x4F')
 
