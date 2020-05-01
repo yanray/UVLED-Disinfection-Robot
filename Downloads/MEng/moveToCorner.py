@@ -294,7 +294,7 @@ def mow(firstTimeMow):
     time.sleep(0.01)
     RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
     time.sleep(0.01)
-    ser.write('\x92\x00\x60\x00\x5F') #move forward with speed 63 out of 255
+    ser.write('\x92\x00\x60\x00\x60') #move forward with speed 63 out of 255
 
     #boolean to determine when to stop
     stop = False
@@ -598,7 +598,7 @@ try:
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
                     
-                    if totalTurns > 3:
+                    if totalTurns > 2:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
                         time.sleep(1)
@@ -685,7 +685,7 @@ try:
                 # turn CCW     
                 else:
                     
-                    if totalTurns > 5:
+                    if totalTurns > 2:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
                         time.sleep(1)
