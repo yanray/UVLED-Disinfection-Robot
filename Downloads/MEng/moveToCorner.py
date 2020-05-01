@@ -74,7 +74,7 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 global moveToCorner #flag for moving to table corner. Need to move to corner whenever a new surface is encountered
 moveToCorner = True
 turn_CW = True      # turn clockwise
-#totalTurns = 0
+totalTurns = 0
 
 """
 ----------------------
@@ -540,11 +540,11 @@ try:
                     #now mow
                     print("Entering lawn mowing algorithm for the first time")
                     #True means it is our first time mowing
-                    a= ultrasound(19,26)
-                    print(a)
+                    #a= ultrasound(19,26)
+                    #print(a)
                     mow(True) #mow just moves forward until no sensors are under the table
-                    a= ultrasound(19,26)
-                    print(a)
+                    #a= ultrasound(19,26)
+                    #print(a)
                     #Done with the first lawn mow
                     print("Done with the first lawn mow")
                     """
@@ -574,8 +574,8 @@ try:
                     #pause(ser)
                     #break
 
-
-                    if(stopCondition==True):
+                    #temp don't use this
+                    if(False):#stopCondition==True
                         print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
                         ser.write(STOPMOVING)
                         moveToCorner = True #done mowing, next time we mow need to find corner
@@ -593,13 +593,15 @@ try:
 
 
 
+
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
-                    """
-                    if totalTurns > 5:
+                    
+                    if totalTurns > 3:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
+                        time.sleep(1)
                         moveToCorner = True #done mowing, next time we mow need to find corner
                         #transition back to wandering and polling
                         modeFlag = 0
@@ -607,7 +609,7 @@ try:
                         wander = True #go back to wandering
                         totalTurns = 0
                         continue
-                    """
+                    
                     print('In clockwise turn')
                     ser.write('\x92\x00\x00\x00\x7F') #move left wheels not right wheels
 
@@ -619,7 +621,7 @@ try:
                         LEFT_UNDER = checkIfUnder(leftTrigPin,leftEchoPin,threshold)
                         time.sleep(0.01)
                     endTime = time.time()
-                    #totalTurns = totalTurns +1
+                    totalTurns = totalTurns +1
                     #Done with CW turn
                     print("Done with clockwise turn")
                     """
@@ -634,8 +636,8 @@ try:
                     #this implies we need to do a 180 turn and then wander
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
-
-                    if(endTime - startTime > 7.35):
+                    #temp dont use this
+                    if(False):#endTime - startTime > 17.35
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -682,10 +684,11 @@ try:
 
                 # turn CCW     
                 else:
-                    """
+                    
                     if totalTurns > 5:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
+                        time.sleep(1)
                         moveToCorner = True #done mowing, next time we mow need to find corner
                         #transition back to wandering and polling
                         modeFlag = 0
@@ -693,7 +696,7 @@ try:
                         wander = True #go back to wandering
                         totalTurns = 0
                         continue
-                    """
+                    
                     print('In counter clockwise turn')
                     ser.write('\x92\x00\x7F\x00\x00') #right wheel moves and left doesn't
 
@@ -705,7 +708,7 @@ try:
                         RIGHT_UNDER = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
                         time.sleep(0.01)
                     endTime = time.time()
-                    #totalTurns = totalTurns + 1
+                    totalTurns = totalTurns + 1
 
                     #Done with CW turn
                     print("Done with counter clockwise turn")
@@ -718,8 +721,8 @@ try:
                     #break
 
                     print("Time spent in turn: "+str(endTime-startTime))
-                    
-                    if(endTime - startTime > 7.35):
+                    #temp don't use this
+                    if(False):#endTime - startTime > 7.35
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
