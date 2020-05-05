@@ -61,23 +61,28 @@ try:
         print('calculating distance....')
         dist = checklist()
         print('Distance: %0.2f cm'%dist)
-       
+        if(dist > 50):
+            under_the_table = 0
+        else:
+            under_the_table = 1
+    
         if(under_the_table):
-           print("in1")
-           ser.write('\x55\x55\x05\x06\x09\x01\x00')
+           print("under the table so disinfect")
+          #ser.write('\x55\x55\x05\x06\x09\x01\x00')
            time.sleep(2)
-           if(dist > 0 and dist < 10):
-                print("in5_10")
+           if(dist > 0 and dist < 20):
+                print("in0_20")
                 ser.write('\x55\x55\x05\x06\x05\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x05\x01\x00')#Action group 1 is for disinfection of the table 
                 time.sleep(2) #Action is set for 18*1000ms therefore delay 19s
-           elif(dist > 10 and dist < 20):
-                print("in10_20")
+           elif(dist > 20 and dist < 50):
+                print("in20_50")
                 ser.write('\x55\x55\x05\x06\x06\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x09\x01\x00')
                 #ser.write('\x55\x55\x05\x06\x04\x01\x00')#Action group 4 is for disinfection of the table 
                 time.sleep(2) #Action is set for 18*1000ms therefore delay 19s
         else:
+         print("SHOULD RESET")
          ser.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset
          time.sleep(2)#Action for 1000ms*1 , therefore delay for 1s
             

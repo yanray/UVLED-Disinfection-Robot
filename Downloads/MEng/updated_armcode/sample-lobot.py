@@ -17,7 +17,7 @@ while(i<2):
     time.sleep(2)#Action for 1000ms*1 , therefore delay for 1s
     ser.write('\x55\x55\x05\x06\x08\x01\x00')#Action group 1 is for disinfection of the table 
     #time.sleep(19) #Action is set for 18*1000ms therefore delay 19s
-    time.sleep(2)
+    time.sleep(10)
     ser.write('\x55\x55\x05\x06\x00\x01\x00') #Action Group 0 running. It brings into initial position i.e. reset 
     print("packet rec")
     time.sleep(2)#Action for 1000ms*1 , therefore delay for 1s
