@@ -1,9 +1,11 @@
 """
+Intro:
 This is the UV Robot MEng project. The goal of this project is to create a robot that can autonomously
 disinfect hard to reach surfaces such as the underside of hospital beds by mounting a UV light and ultrasound
 sensors to a Roomba. Applications of this include reducing the amount of lingering bacteria found in 
 hospital rooms.
 
+Overview of algorithm:
 At a high level, we have 3 ultrasound sensors and a UV light attached to a robot arm mounted on a Roomba.
 The 3 ultrasound sensors are used for navigation, the detection of surfaces, and for gauging how far
 the UV light on the robot arm needs to move to adjust to the surface height. The robot arm is used
@@ -21,6 +23,14 @@ the table, the UV light is turned on while the robot arm holds it close to the t
 
 When the surface is successfully disinfected, the Roomba leaves the table and resumes wandering until another surface
 is detected.
+
+Quick check for serial connection between MiniDIN-USB cable:
+Run the song.py script. This should play an A4 note from the Roomba when properly connected with the Raspberry Pi.
+
+Work to do:
+What we weren't able to do is successfully integrate the code to move the arm with the code that performed the navigation
+logic. What we have now is the robot arm code in the comments. This may have to be edited and integrated with the existing 
+navigation code we have below.
 """
 
 
@@ -62,9 +72,9 @@ rightTrigPin = 19
 rightEchoPin = 26
 
 
-threshold = 50 #how close surface has to be to the ultrasound sensor for Roomba to consider itself "under" the surface
+threshold = 50 #how close surface has to be to the ultrasound sensor (in cm) for Roomba to consider itself "under" the surface
 
-#used for Roomba find table corner 
+#used for Roomba to find and move to a table corner 
 global ClockWise #do I need to turn CW?
 global C_ClockWise #do I need to turn CCW?
 C_ClockWise = True #T means need to turn left after align for corner find
@@ -73,8 +83,9 @@ ClockWise = False #T means I have turned left for corner find and need to turn r
 ## variables for robot turning under table
 global moveToCorner #flag for moving to table corner. Need to move to corner whenever a new surface is encountered
 moveToCorner = True
-turn_CW = True      # turn clockwise
-totalTurns = 0
+turn_CW = True      # turn clockwise after a vertical/ column-wise lawn mowing traversal of the table
+#------A PART TO FIX/UPGRADE----------------
+totalTurns = 0  #sadly, we had to use a turn limit to exit the table traversal part of the algorithm. Try using sensor based data to end table traversal
 
 """
 ----------------------
@@ -85,10 +96,6 @@ arm_under_table = False
 ---------------------
 """
 
-
-#we don't use these two variables. From older previous code. Can potentially get rid of this
-clean = False
-mowing = False
 
 # handy constants for various modes of Roomba operation and some wheel speeds. All in hex 
 leftSpeed = '\x00\x8f'      #PWM mode speed control of Roomba wheels 
@@ -113,12 +120,7 @@ print("Started")
 time.sleep(0.2)
 ser.write(CLEANMODE) #clean mode
 print("Wandering")
-#time.sleep(0.2)
-#ser.write(SAFEMODE)
-#time.sleep(0.2)
-#print("forward")
-#ser.write('\x92\x00\x60\x00\x5F')
-#time.sleep(10)
+
 """
 ---------------------
 #initiate arm in the reset position. Can turn this into a method tbh
@@ -148,8 +150,6 @@ def GPIO27_callback(channel):
     serArm.close()
     ------------------
     """
-    #do we need this?
-    #GPIO.cleanup()
     print("System shut down")
 
 # GPIO initial setup 
@@ -349,9 +349,8 @@ def ultrasound(trigPin, echoPin):
 
 
 """
-----------
-TEMPORARY CODE FOR BREAKING CODE INTO SECTIONS
------------
+Used for testing purposes. Pause stops the Roomba from moving and shuts down serial connections.
+You will still need to add a break statement after calling pause() if you are in a loop to stop everything
 """
 def pause(ser):
     #safe mode then stop
@@ -409,18 +408,7 @@ try:
                     ser.write(STOPMOVING) #stop wheels moving
                     time.sleep(0.1)
 
-                    #this is for before the roomba starts moving to the corner, but after align
-                    #print("this is for before the roomba starts moving to the corner, but after align")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    did not work at the first time
-                    hold the table a little bit away from the Rommba
-                    """
-                    #pause(ser)
-                    #break
-                    
+                                        
                     #We found that sometimes the Roomba overshoots so this moves backward a little bit
                     #to account for that. Don't worry this is based off of sensor readings and not timing
                     temp = checkIfUnder(rightTrigPin,rightEchoPin,threshold)
@@ -447,23 +435,6 @@ try:
                             C_ClockWise = False
                     C_ClockWise = True #reset this flag for if we find another surface to traverse later
 
-                    #Roomba can overshoot and turn too much. Adjust the overshoot
-                    ##########################################
-                    #print("adjusting for counter clockwise overshoot")
-                    #ser.write('\x92\xFF\xA1\x00\x5F')
-                    #temp2 = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
-                    #while(temp2==False):
-                    #    temp2 = checkIfUnder(frontTrigPin, frontEchoPin,threshold)
-
-                    #Finished rotating left. Facing bottom left table corner
-                    #print("Finished rotating left. Facing bottom left table corner")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
                     
                     
                     #This moves the robot to the table corner
@@ -490,15 +461,6 @@ try:
                     ser.write(STOPMOVING)
                     time.sleep(0.1)
 
-                    #Moved to table corner and did the backward adjust.
-                    #print("Moved to table corner and did the backward adjust.")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
 
 
                     #Finished moving to the table edge, but we are facing away from the table. 
@@ -520,40 +482,13 @@ try:
                     #set move to corner to false after initial run is done
                     moveToCorner = False
 
-                    #move to corner is now complete
-                    #print("move to corner is now complete")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
-                    #ser.write(STOPMOVING)
-                    #time.sleep(0.2)
-                    #ser.write('\x92\x00\x5F\x00\x5F')
-                    #time.sleep(0.05)
-
-
-
-
                     #now mow
                     print("Entering lawn mowing algorithm for the first time")
-                    #True means it is our first time mowing
-                    #a= ultrasound(19,26)
-                    #print(a)
+
                     mow(True) #mow just moves forward until no sensors are under the table
-                    #a= ultrasound(19,26)
-                    #print(a)
-                    #Done with the first lawn mow
+ 
                     print("Done with the first lawn mow")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
+
 
 
 
@@ -566,16 +501,9 @@ try:
 
                     #Done with not first lawn mowing
                     print("Done with not first lawn mowing")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
 
-                    #temp don't use this
-                    if(False):#stopCondition==True
+                    
+                    if(stopCondition==True):
                         print("In end condition because of ultrasound sensor stop condition. Return to wandering and polling")
                         ser.write(STOPMOVING)
                         moveToCorner = True #done mowing, next time we mow need to find corner
@@ -597,7 +525,9 @@ try:
                 #now to handle turning
                 print("Am I turning clockwise? " + str(turn_CW))
                 if(turn_CW):
-                    
+                    #we had to add turn limited logic to our code so that robot stopped navigating at the right time
+                    #What we want instead is smart sensor based measurements that tell us when to stop lawn mowing
+                    #and resume wandering
                     if totalTurns > 2:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
@@ -624,20 +554,16 @@ try:
                     totalTurns = totalTurns +1
                     #Done with CW turn
                     print("Done with clockwise turn")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
+
 
                     #check if the elapsed time is too long.
                     #this implies we need to do a 180 turn and then wander
                     #the time that is considered "too long" can be modified
                     print("Time spent in turn: "+str(endTime-startTime))
-                    #temp dont use this
-                    if(False):#endTime - startTime > 17.35
+                    #This is a time based turn. If a turn takes too long then something is up and we should resume wandering
+                    #this doesn't work perfectly so it will need to be improved
+                    #17.35 is just some randomly large value we chose to use as placeholder
+                    if(endTime - startTime > 17.35):
                         #stop, turn 180, wander
                         print("In end condition because of turn duration. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -661,19 +587,6 @@ try:
                         """                      
                         continue
 
-                        #ignore comments below. Used when Patrick and Beau were testing
-                        # #safe mode then stop
-                        # print("exit")
-                        # time.sleep(0.2)
-                        # ser.write('\x83')#safe mode
-                        # time.sleep(0.2)
-                        # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        # time.sleep(0.2)
-                        # #stop command when we are done working
-                        # ser.write('\xAD') #stop
-                        # GPIO.cleanup()
-                        # ser.close()
-                        # break 
 
                     turn_CW = False #we know to turn CCW now
                     #align after turn so that turns are ~crisp~
@@ -684,7 +597,7 @@ try:
 
                 # turn CCW     
                 else:
-                    
+                    #same comment as above for CW turn. Replace turn limited navigation algorithm
                     if totalTurns > 2:
                         print("Resuming wandering")
                         ser.write(STOPMOVING)
@@ -712,17 +625,11 @@ try:
 
                     #Done with CW turn
                     print("Done with counter clockwise turn")
-                    """
-                    ------------------
-                    ADDING A PAUSE AND BREAK
-                    ------------------
-                    """
-                    #pause(ser)
-                    #break
+
 
                     print("Time spent in turn: "+str(endTime-startTime))
-                    #temp don't use this
-                    if(False):#endTime - startTime > 7.35
+                    #same comment as for the CW turn. This is buggy and should be fixed.
+                    if(endTime - startTime > 17.35):
                         #stop, turn 180, wander
                         print("In end condition b/c of timing. Return to wandering and polling")
                         ser.write(STOPMOVING)
@@ -746,25 +653,12 @@ try:
                         """
                         continue
 
-                        # #safe mode then stop
-                        # print("exit")
-                        # time.sleep(0.2)
-                        # ser.write('\x83')#safe mode
-                        # time.sleep(0.2)
-                        # ser.write('\x92\x00\x00\00\00') #wheel speed of 0
-                        # time.sleep(0.2)
-                        # #stop command when we are done working
-                        # ser.write('\xAD') #stop
-                        # GPIO.cleanup()
-                        # ser.close()
-                        # break 
-
                     turn_CW = True
                     #align after turn so that turns are ~crisp~
                     align()  
                     time.sleep(2)   
             else:
-                ser.write('\x92\x00\x4F\x00\x4F')
+                ser.write('\x92\x00\x4F\x00\x4F') #move right and left wheels with speed 4F (hex)
 
       
 except KeyboardInterrupt:
